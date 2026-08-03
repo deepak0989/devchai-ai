@@ -11,10 +11,17 @@ export const config = {
   clientUrl: process.env.CLIENT_URL ?? 'http://localhost:5173',
 };
 
-if (!config.supabaseUrl || !config.supabaseServiceKey) {
-  console.warn('WARN: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing in .env - auth and storage will fail.');
-}
+const missing: string[] = [];
 
-if (!config.openRouterApiKey) {
-  console.warn('WARN: OPENROUTER_API_KEY missing in .env - chat completions will fail.');
+if (!config.supabaseUrl || !/^https?:\/\//.test(config.supabaseUrl)) missing.push('SUPABASE_URL');
+if (!config.supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+if (!config.openRouterApiKey) missing.push('OPENROUTER_API_KEY');
+if (!config.clientUrl) missing.push('CLIENT_URL');
+
+if (missing.length > 0) {
+  console.error(
+    `FATAL: Missing required environment variable(s): ${missing.join(', ')}. ` +
+      'Set them on the hosting platform or in a .env file.'
+  );
+  process.exit(1);
 }
