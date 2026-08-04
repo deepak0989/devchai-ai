@@ -101,6 +101,8 @@ export const api = {
       recentUsers: Array<{ name: string; email: string; plan: string }>;
       activity: string[];
       systemHealth: Array<{ label: string; value: string; color: string }>;
+      revenueTrend: Array<{ label: string; value: number }>;
+      usageTrend: Array<{ label: string; value: number }>;
       lastUpdated: string;
     }>('/admin/overview');
   },
