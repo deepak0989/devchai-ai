@@ -93,4 +93,15 @@ export const api = {
   getMessages(chatId: string) {
     return request<{ messages: Message[] }>(`/chats/${chatId}/messages`);
   },
+
+  adminOverview() {
+    return request<{
+      summary: Array<{ label: string; value: string; change: string; color: string }>;
+      modelBreakdown: Array<{ name: string; count: number; value: number; color: string }>;
+      recentUsers: Array<{ name: string; email: string; plan: string }>;
+      activity: string[];
+      systemHealth: Array<{ label: string; value: string; color: string }>;
+      lastUpdated: string;
+    }>('/admin/overview');
+  },
 };
