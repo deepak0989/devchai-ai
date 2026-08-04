@@ -106,4 +106,17 @@ export const api = {
       lastUpdated: string;
     }>('/admin/overview');
   },
+
+  adminUsers() {
+    return request<{ users: Array<{ id: string; name: string; email: string; role: string; status: string; created_at: string; last_seen: string }> }>('/admin/users');
+  },
+
+  adminBilling() {
+    return request<{
+      totalRevenue: string;
+      arpu: string;
+      monthlyRevenue: Array<{ month: string; revenue: number; customers: number }>;
+      subscriptionBreakdown: Array<{ plan: string; users: number; revenue: number }>;
+    }>('/admin/billing');
+  },
 };
