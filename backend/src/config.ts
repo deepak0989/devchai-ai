@@ -9,6 +9,14 @@ export const config = {
   openRouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
   openRouterBaseUrl: process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1',
   clientUrl: process.env.CLIENT_URL ?? 'http://localhost:5173',
+  adminEmails: (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+  adminDomains: (process.env.ADMIN_DOMAINS ?? '')
+    .split(',')
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean),
 };
 
 const missing: string[] = [];
