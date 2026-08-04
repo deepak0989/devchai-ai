@@ -2,36 +2,47 @@ import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
-    primary: { main: '#10a37f' },
-    secondary: { main: '#8ab4f8' },
+    mode: 'light',
+    primary: {
+      main: '#10a37f',
+      light: '#d7f5ec',
+      dark: '#0b8f6c',
+    },
+    secondary: { main: '#6b7cff' },
     background: {
-      default: '#212121',
-      paper: '#171717',
+      default: '#f5f5f4',
+      paper: '#ffffff',
     },
     text: {
-      primary: '#ececec',
-      secondary: '#a8a8a8',
+      primary: '#111827',
+      secondary: '#6b7280',
     },
-    divider: 'rgba(255, 255, 255, 0.08)',
+    divider: 'rgba(17, 24, 39, 0.08)',
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 18,
   },
   typography: {
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     body1: { lineHeight: 1.6 },
+    body2: { lineHeight: 1.5 },
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        html: {
+          backgroundColor: '#f5f5f4',
+        },
         body: {
-          scrollbarColor: '#4a4a4a transparent',
+          margin: 0,
+          backgroundColor: '#f5f5f4',
+          color: '#111827',
+          scrollbarColor: '#d4d4d8 transparent',
           '&::-webkit-scrollbar': { width: 8, height: 8 },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#4a4a4a',
-            borderRadius: 4,
+            backgroundColor: '#d4d4d8',
+            borderRadius: 999,
           },
           '&::-webkit-scrollbar-track': { backgroundColor: 'transparent' },
         },
@@ -39,12 +50,30 @@ const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: 'none' },
+        root: {
+          textTransform: 'none',
+          borderRadius: 12,
+          fontWeight: 600,
+        },
       },
     },
     MuiTooltip: {
       styleOverrides: {
         tooltip: { fontSize: 12 },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          boxShadow: 'none',
+        },
       },
     },
   },
