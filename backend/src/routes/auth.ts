@@ -4,6 +4,18 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+async function ensureUserRole(userId: string, role: 'user' | 'admin' = 'user') {
+  const { data: existingRole } = await supabase
+    .from('roles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!existingRole) {
+    await supabase.from('roles').insert({ user_id: userId, role });
+  }
+}
+
 function isValidEmail(email: unknown): email is string {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -31,6 +43,10 @@ router.post('/register', async (req, res) => {
   const user = data.user
     ? { id: data.user.id, email: data.user.email }
     : null;
+
+  if (data.user?.id) {
+    await ensureUserRole(data.user.id, 'user');
+  }
 
   if (!data.session) {
     return res.status(201).json({
@@ -62,6 +78,10 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: error.message });
   }
 
+  if (data.user?.id) {
+    await ensureUserRole(data.user.id, 'user');
+  }
+
   return res.json({
     user: { id: data.user.id, email: data.user.email },
     session: {
@@ -71,8 +91,20 @@ router.post('/login', async (req, res) => {
   });
 });
 
-router.get('/me', requireAuth, (req: AuthRequest, res) => {
-  return res.json({ user: req.user });
+router.get('/me', requireAuth, async (req: AuthRequest, res) => {
+  const { data: roleData } = await supabase
+    .from('roles')
+    .select('role')
+    .eq('user_id', req.user!.id)
+    .maybeSingle();
+
+  return res.json({
+    user: {
+      id: req.user!.id,
+      email: req.user!.email,
+      role: (roleData?.role as 'admin' | 'user') ?? 'user',
+    },
+  });
 });
 
 export default router;
