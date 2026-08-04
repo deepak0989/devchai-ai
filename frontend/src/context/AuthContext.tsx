@@ -19,6 +19,29 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
+function readSupabaseSessionFromCallback() {
+  const fragment = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+  const query = window.location.search.startsWith('?') ? window.location.search.slice(1) : '';
+  const raw = fragment || query;
+
+  if (!raw) {
+    return null;
+  }
+
+  const params = new URLSearchParams(raw);
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+
+  if (!accessToken || !refreshToken) {
+    return null;
+  }
+
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+}
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -63,8 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const finalizeGoogleSignIn = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
+    let session = (await supabase.auth.getSession()).data.session;
+
+    if (!session?.access_token) {
+      const callbackSession = readSupabaseSessionFromCallback();
+
+      if (!callbackSession) {
+        throw new Error('Google sign-in did not complete');
+      }
+
+      const { data, error } = await supabase.auth.setSession(callbackSession);
+      if (error) throw error;
+      session = data.session;
+
+      window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+    }
 
     if (!session?.access_token) {
       throw new Error('Google sign-in did not complete');
