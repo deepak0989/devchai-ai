@@ -1,8 +1,25 @@
 import { Router } from 'express';
+import { config } from '../config';
 import { supabase } from '../db/supabase';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+function isAdminEmail(email: string): boolean {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+  if (config.adminEmails.includes(normalized)) return true;
+  const domain = normalized.split('@')[1];
+  return Boolean(domain && config.adminDomains.includes(domain));
+}
+
+export function requireAdmin(req: AuthRequest, res: any, next: () => void) {
+  const email = req.user?.email ?? '';
+  if (!isAdminEmail(email)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  return next();
+}
 
 function formatCompactNumber(value: number): string {
   if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
@@ -15,7 +32,7 @@ function formatChange(value: number): string {
   return `${sign}${value.toFixed(1)}%`;
 }
 
-router.get('/overview', requireAuth, async (_req: AuthRequest, res) => {
+router.get('/overview', requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
   try {
     const [usersResult, chatsResult, messagesResult] = await Promise.all([
       (supabase.auth as any).admin.listUsers({ page: 1, perPage: 1000 }),
@@ -113,12 +130,33 @@ router.get('/overview', requireAuth, async (_req: AuthRequest, res) => {
       { label: 'Error Rate', value: '0.8%', color: '#3b82f6' },
     ];
 
+    const revenueTrend = [
+      { label: 'Jan', value: 18 },
+      { label: 'Feb', value: 22 },
+      { label: 'Mar', value: 26 },
+      { label: 'Apr', value: 31 },
+      { label: 'May', value: 35 },
+      { label: 'Jun', value: 42 },
+    ];
+
+    const usageTrend = [
+      { label: 'Mon', value: 56 },
+      { label: 'Tue', value: 62 },
+      { label: 'Wed', value: 74 },
+      { label: 'Thu', value: 69 },
+      { label: 'Fri', value: 82 },
+      { label: 'Sat', value: 87 },
+      { label: 'Sun', value: 94 },
+    ];
+
     return res.json({
       summary,
       modelBreakdown,
       recentUsers,
       activity,
       systemHealth,
+      revenueTrend,
+      usageTrend,
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
