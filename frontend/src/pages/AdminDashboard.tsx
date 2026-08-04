@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Box,
   Card,
@@ -10,51 +11,100 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { api } from '../api/client';
 
-const summaryCards = [
-  { label: 'Total Users', value: '24.8K', change: '+12.4%', tone: '#10a37f' },
-  { label: 'Active Chats', value: '1,426', change: '+8.1%', tone: '#3b82f6' },
-  { label: 'Messages Sent', value: '96.2K', change: '+18.6%', tone: '#8b5cf6' },
-  { label: 'Avg. Response', value: '1.8s', change: '-0.4s', tone: '#f59e0b' },
+interface DashboardSummary {
+  label: string;
+  value: string;
+  change: string;
+  color: string;
+}
+
+interface DashboardModelBreakdown {
+  name: string;
+  count: number;
+  value: number;
+  color: string;
+}
+
+interface DashboardUser {
+  name: string;
+  email: string;
+  plan: string;
+}
+
+interface DashboardResponse {
+  summary: DashboardSummary[];
+  modelBreakdown: DashboardModelBreakdown[];
+  recentUsers: DashboardUser[];
+  activity: string[];
+  systemHealth: Array<{ label: string; value: string; color: string }>;
+  lastUpdated: string;
+}
+
+const fallbackSummary: DashboardSummary[] = [
+  { label: 'Total Users', value: '--', change: '+0.0%', color: '#10a37f' },
+  { label: 'Active Chats', value: '--', change: '+0.0%', color: '#3b82f6' },
+  { label: 'Messages Sent', value: '--', change: '+0.0%', color: '#8b5cf6' },
+  { label: 'Avg. Response', value: '--', change: '0.0s', color: '#f59e0b' },
 ];
 
-const modelStats = [
-  { name: 'GPT-4o mini', value: 74, color: '#10a37f' },
-  { name: 'Claude 3.5 Sonnet', value: 46, color: '#d97757' },
-  { name: 'Gemini 2.0 Flash', value: 32, color: '#4285f4' },
-  { name: 'DeepSeek V3', value: 18, color: '#4d6bfe' },
+const fallbackModels: DashboardModelBreakdown[] = [
+  { name: 'GPT-4o mini', count: 0, value: 0, color: '#10a37f' },
+  { name: 'Claude 3.5 Sonnet', count: 0, value: 0, color: '#d97757' },
+  { name: 'Gemini 2.0 Flash', count: 0, value: 0, color: '#4285f4' },
+  { name: 'DeepSeek V3', count: 0, value: 0, color: '#4d6bfe' },
 ];
 
-const recentUsers = [
-  { name: 'Alicia Smith', email: 'alicia@acme.dev', plan: 'Pro' },
-  { name: 'Ravi Patel', email: 'ravi@northstar.io', plan: 'Team' },
-  { name: 'Priya Shah', email: 'priya@luma.ai', plan: 'Enterprise' },
-  { name: 'Marcus Lee', email: 'marcus@copperlabs.ai', plan: 'Pro' },
+const fallbackUsers: DashboardUser[] = [
+  { name: 'Loading...', email: 'loading@mydevai.app', plan: '—' },
 ];
 
-const activity = [
-  '12 new signups in the last 24 hours',
-  'AI model uptime remained above 99.9%',
-  '2 support tickets resolved automatically',
-  'Peak concurrency hit 480 users today',
-];
+const fallbackActivity = ['Loading dashboard insights...'];
 
-const systemHealth = [
-  { label: 'API Health', value: '99.9%', color: '#10a37f' },
-  { label: 'Queue Health', value: '96%', color: '#f59e0b' },
-  { label: 'Error Rate', value: '0.8%', color: '#3b82f6' },
+const fallbackSystemHealth = [
+  { label: 'API Health', value: '--', color: '#10a37f' },
+  { label: 'Queue Health', value: '--', color: '#f59e0b' },
+  { label: 'Error Rate', value: '--', color: '#3b82f6' },
 ];
 
 export default function AdminDashboard() {
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadOverview() {
+      try {
+        setLoading(true);
+        const overview = await api.adminOverview();
+        setData(overview);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOverview();
+  }, []);
+
+  const summaryCards = data?.summary ?? fallbackSummary;
+  const modelStats = data?.modelBreakdown ?? fallbackModels;
+  const recentUsers = data?.recentUsers ?? fallbackUsers;
+  const activity = data?.activity ?? fallbackActivity;
+  const systemHealth = data?.systemHealth ?? fallbackSystemHealth;
+
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, #f5f5f4 0%, #eef3f1 100%)',
+        background: 'radial-gradient(circle at top left, rgba(16,163,127,0.12), transparent 38%), linear-gradient(180deg, #f5f5f4 0%, #eef3f1 100%)',
         p: { xs: 2, md: 4 },
       }}
     >
-      <Box sx={{ maxWidth: 1360, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
         <Stack spacing={3}>
           <Box
             sx={{
@@ -66,25 +116,41 @@ export default function AdminDashboard() {
             }}
           >
             <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.4 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.5 }}>
                 ADMIN OVERVIEW
               </Typography>
-              <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.05em' }}>
+              <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>
                 MyDevAI Dashboard
               </Typography>
             </Box>
-            <Chip
-              label="System healthy"
-              color="success"
-              sx={{
-                bgcolor: 'rgba(16,163,127,0.12)',
-                color: '#0f766e',
-                fontWeight: 700,
-                px: 0.5,
-                py: 0.5,
-              }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Chip
+                label={loading ? 'Refreshing' : 'System healthy'}
+                sx={{
+                  bgcolor: loading ? 'rgba(59,130,246,0.12)' : 'rgba(16,163,127,0.12)',
+                  color: loading ? '#1d4ed8' : '#0f766e',
+                  fontWeight: 700,
+                  px: 0.5,
+                  py: 0.5,
+                }}
+              />
+              {data?.lastUpdated && (
+                <Typography variant="caption" color="text.secondary">
+                  Updated {new Date(data.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Typography>
+              )}
+            </Box>
           </Box>
+
+          {error && (
+            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(239,68,68,0.2)', bgcolor: 'rgba(239,68,68,0.04)' }}>
+              <CardContent sx={{ py: 2, px: 2.5 }}>
+                <Typography variant="body2" color="error.main" fontWeight={600}>
+                  {error}
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
 
           <Box
             sx={{
@@ -99,8 +165,9 @@ export default function AdminDashboard() {
                 sx={{
                   border: 1,
                   borderColor: 'rgba(17,24,39,0.06)',
-                  boxShadow: '0 14px 32px rgba(15,23,42,0.04)',
+                  boxShadow: '0 18px 38px rgba(15,23,42,0.05)',
                   borderRadius: 4,
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.98) 100%)',
                 }}
               >
                 <CardContent sx={{ p: 3 }}>
@@ -108,15 +175,15 @@ export default function AdminDashboard() {
                     {card.label}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 1 }}>
-                    <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.05em' }}>
+                    <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>
                       {card.value}
                     </Typography>
                     <Chip
                       label={card.change}
                       size="small"
                       sx={{
-                        bgcolor: `${card.tone}1A`,
-                        color: card.tone,
+                        bgcolor: `${card.color}1A`,
+                        color: card.color,
                         fontWeight: 700,
                       }}
                     />
@@ -133,7 +200,7 @@ export default function AdminDashboard() {
               gap: 2,
             }}
           >
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)' }}>
+            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
                   Model Usage
@@ -160,7 +227,7 @@ export default function AdminDashboard() {
                       >
                         <Box
                           sx={{
-                            width: `${item.value}%`,
+                            width: `${Math.max(6, item.value)}%`,
                             height: '100%',
                             borderRadius: 999,
                             background: `linear-gradient(90deg, ${item.color} 0%, ${item.color}CC 100%)`,
@@ -173,10 +240,10 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)' }}>
+            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-                  System health
+                  System Health
                 </Typography>
                 <Stack spacing={2}>
                   {systemHealth.map((item) => (
@@ -217,7 +284,7 @@ export default function AdminDashboard() {
               gap: 2,
             }}
           >
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)' }}>
+            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
                   Recent activity
@@ -251,7 +318,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)' }}>
+            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
                   Active users
@@ -259,7 +326,7 @@ export default function AdminDashboard() {
                 <Stack spacing={1.5}>
                   {recentUsers.map((user) => (
                     <Box
-                      key={user.email}
+                      key={`${user.email}-${user.name}`}
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
