@@ -46,11 +46,13 @@ export default function ChatInput({
         px: 1.5,
         py: 1,
         border: 1,
-        borderColor: 'divider',
-        borderRadius: 3,
-        bgcolor: 'background.paper',
+        borderColor: 'rgba(17,24,39,0.08)',
+        borderRadius: 4,
+        bgcolor: '#ffffff',
+        boxShadow: '0 18px 40px rgba(15, 23, 42, 0.04)',
         '&:focus-within': {
-          borderColor: 'rgba(255,255,255,0.25)',
+          borderColor: 'rgba(16,163,127,0.35)',
+          boxShadow: '0 0 0 4px rgba(16,163,127,0.08)',
         },
       }}
     >
@@ -65,8 +67,9 @@ export default function ChatInput({
         placeholder={placeholder}
         sx={{
           px: 0.5,
-          py: 0.5,
-          fontSize: '0.95rem',
+          py: 0.75,
+          fontSize: '0.97rem',
+          color: 'text.primary',
           '& textarea::-webkit-scrollbar': { display: 'none' },
         }}
         inputProps={{ 'aria-label': placeholder, autoFocus: true }}
@@ -76,7 +79,12 @@ export default function ChatInput({
           onClick={onStop}
           color="error"
           aria-label="Stop generating"
-          sx={{ flexShrink: 0, mb: 0.25 }}
+          sx={{
+            flexShrink: 0,
+            mb: 0.25,
+            bgcolor: 'rgba(239, 68, 68, 0.08)',
+            '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.12)' },
+          }}
         >
           <StopCircleIcon />
         </IconButton>
@@ -91,9 +99,10 @@ export default function ChatInput({
             mb: 0.25,
             bgcolor: 'primary.main',
             color: '#fff',
+            borderRadius: 2,
             '&:hover': { bgcolor: 'primary.dark' },
             '&.Mui-disabled': {
-              bgcolor: 'rgba(255,255,255,0.12)',
+              bgcolor: 'rgba(17,24,39,0.08)',
               color: 'text.disabled',
             },
           }}
