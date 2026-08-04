@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Card,
@@ -39,6 +39,8 @@ interface DashboardResponse {
   recentUsers: DashboardUser[];
   activity: string[];
   systemHealth: Array<{ label: string; value: string; color: string }>;
+  revenueTrend: Array<{ label: string; value: number }>;
+  usageTrend: Array<{ label: string; value: number }>;
   lastUpdated: string;
 }
 
@@ -68,6 +70,30 @@ const fallbackSystemHealth = [
   { label: 'Error Rate', value: '--', color: '#3b82f6' },
 ];
 
+const fallbackTrend = [
+  { label: 'Jan', value: 18 },
+  { label: 'Feb', value: 22 },
+  { label: 'Mar', value: 26 },
+  { label: 'Apr', value: 31 },
+  { label: 'May', value: 34 },
+  { label: 'Jun', value: 40 },
+];
+
+function buildLinePath(values: number[], width: number, height: number): string {
+  if (!values.length) return '';
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  return values
+    .map((value, index) => {
+      const x = (index / Math.max(values.length - 1, 1)) * width;
+      const y = height - ((value - min) / range) * (height - 12) - 6;
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+    })
+    .join(' ');
+}
+
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,273 +121,231 @@ export default function AdminDashboard() {
   const recentUsers = data?.recentUsers ?? fallbackUsers;
   const activity = data?.activity ?? fallbackActivity;
   const systemHealth = data?.systemHealth ?? fallbackSystemHealth;
+  const revenueTrend = data?.revenueTrend ?? fallbackTrend;
+  const usageTrend = data?.usageTrend ?? fallbackTrend;
+
+  const revenuePath = useMemo(
+    () => buildLinePath(revenueTrend.map((point) => point.value), 420, 120),
+    [revenueTrend]
+  );
+
+  const usagePath = useMemo(
+    () => buildLinePath(usageTrend.map((point) => point.value), 420, 120),
+    [usageTrend]
+  );
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'radial-gradient(circle at top left, rgba(16,163,127,0.12), transparent 38%), linear-gradient(180deg, #f5f5f4 0%, #eef3f1 100%)',
-        p: { xs: 2, md: 4 },
-      }}
-    >
-      <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-        <Stack spacing={3}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 2,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.5 }}>
-                ADMIN OVERVIEW
-              </Typography>
-              <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>
-                MyDevAI Dashboard
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-              <Chip
-                label={loading ? 'Refreshing' : 'System healthy'}
-                sx={{
-                  bgcolor: loading ? 'rgba(59,130,246,0.12)' : 'rgba(16,163,127,0.12)',
-                  color: loading ? '#1d4ed8' : '#0f766e',
-                  fontWeight: 700,
-                  px: 0.5,
-                  py: 0.5,
-                }}
-              />
-              {data?.lastUpdated && (
-                <Typography variant="caption" color="text.secondary">
-                  Updated {new Date(data.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
-              )}
-            </Box>
-          </Box>
+    <Box sx={{ display: 'flex', minHeight: '100vh', background: '#f5f5f4' }}>
+      <Box
+        sx={{
+          width: 260,
+          background: 'linear-gradient(180deg, #111827 0%, #0f172a 100%)',
+          color: '#f8fafc',
+          p: 2.5,
+          display: { xs: 'none', lg: 'flex' },
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1 }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: 2, bgcolor: '#10a37f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>M</Box>
+          <Typography variant="h6" fontWeight={800}>MyDevAI</Typography>
+        </Box>
 
-          {error && (
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(239,68,68,0.2)', bgcolor: 'rgba(239,68,68,0.04)' }}>
-              <CardContent sx={{ py: 2, px: 2.5 }}>
-                <Typography variant="body2" color="error.main" fontWeight={600}>
-                  {error}
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
+        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {['Overview', 'Analytics', 'Revenue', 'Users', 'Settings'].map((item, index) => (
+            <Box
+              key={item}
+              sx={{
+                px: 1.5,
+                py: 1.2,
+                borderRadius: 2,
+                bgcolor: index === 0 ? 'rgba(16,163,127,0.14)' : 'transparent',
+                color: index === 0 ? '#ecfeff' : '#cbd5e1',
+                fontWeight: index === 0 ? 700 : 500,
+              }}
+            >
+              {item}
+            </Box>
+          ))}
+        </Box>
 
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' },
-              gap: 2,
-            }}
-          >
-            {summaryCards.map((card) => (
-              <Card
-                key={card.label}
-                sx={{
-                  border: 1,
-                  borderColor: 'rgba(17,24,39,0.06)',
-                  boxShadow: '0 18px 38px rgba(15,23,42,0.05)',
-                  borderRadius: 4,
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.98) 100%)',
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {card.label}
+        <Box sx={{ mt: 'auto', p: 2, borderRadius: 3, bgcolor: 'rgba(15,23,42,0.6)', border: 1, borderColor: 'rgba(148,163,184,0.2)' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ color: '#cbd5e1' }}>
+            Workspace Health
+          </Typography>
+          <Typography variant="h5" fontWeight={800} sx={{ mt: 1 }}>99.9%</Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
+        <Box sx={{ maxWidth: 1400, mx: 'auto', mt: { xs: 0, md: 1 } }}>
+          <Stack spacing={3}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.5 }}>
+                  ADMIN OVERVIEW
+                </Typography>
+                <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>
+                  MyDevAI Dashboard
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Chip
+                  label={loading ? 'Refreshing' : 'System healthy'}
+                  sx={{
+                    bgcolor: loading ? 'rgba(59,130,246,0.12)' : 'rgba(16,163,127,0.12)',
+                    color: loading ? '#1d4ed8' : '#0f766e',
+                    fontWeight: 700,
+                    px: 0.5,
+                    py: 0.5,
+                  }}
+                />
+                {data?.lastUpdated && (
+                  <Typography variant="caption" color="text.secondary">
+                    Updated {new Date(data.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 1 }}>
-                    <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>
-                      {card.value}
-                    </Typography>
-                    <Chip
-                      label={card.change}
-                      size="small"
-                      sx={{
-                        bgcolor: `${card.color}1A`,
-                        color: card.color,
-                        fontWeight: 700,
-                      }}
-                    />
+                )}
+              </Box>
+            </Box>
+
+            {error && (
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(239,68,68,0.2)', bgcolor: 'rgba(239,68,68,0.04)' }}>
+                <CardContent sx={{ py: 2, px: 2.5 }}>
+                  <Typography variant="body2" color="error.main" fontWeight={600}>
+                    {error}
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' }, gap: 2 }}>
+              {summaryCards.map((card) => (
+                <Card key={card.label} sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.05)', background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.98) 100%)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{card.label}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 1 }}>
+                      <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>{card.value}</Typography>
+                      <Chip label={card.change} size="small" sx={{ bgcolor: `${card.color}1A`, color: card.color, fontWeight: 700 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', xl: '1.2fr 0.8fr' }, gap: 2 }}>
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight={700}>Revenue trend</Typography>
+                    <Chip label="$128.4K" sx={{ bgcolor: 'rgba(16,163,127,0.12)', color: '#0f766e', fontWeight: 700 }} />
+                  </Box>
+                  <Box sx={{ height: 150, width: '100%', overflow: 'hidden' }}>
+                    <svg viewBox="0 0 420 120" width="100%" height="120" preserveAspectRatio="none">
+                      <path d={revenuePath} fill="none" stroke="#10a37f" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                    {revenueTrend.map((point) => (
+                      <Typography key={point.label} variant="caption" color="text.secondary">{point.label}</Typography>
+                    ))}
                   </Box>
                 </CardContent>
               </Card>
-            ))}
-          </Box>
 
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', lg: '1.5fr 1fr' },
-              gap: 2,
-            }}
-          >
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-                  Model Usage
-                </Typography>
-                <Stack spacing={2.5}>
-                  {modelStats.map((item) => (
-                    <Box key={item.name}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.name}
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600}>
-                          {item.value}%
-                        </Typography>
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>System health</Typography>
+                  <Stack spacing={2}>
+                    {systemHealth.map((item) => (
+                      <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, border: 1, borderColor: 'rgba(17,24,39,0.06)', borderRadius: 3 }}>
+                        <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                        <Chip label={item.value} sx={{ bgcolor: `${item.color}1A`, color: item.color, fontWeight: 700 }} />
                       </Box>
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: 10,
-                          bgcolor: 'rgba(17,24,39,0.05)',
-                          borderRadius: 999,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: `${Math.max(6, item.value)}%`,
-                            height: '100%',
-                            borderRadius: 999,
-                            background: `linear-gradient(90deg, ${item.color} 0%, ${item.color}CC 100%)`,
-                          }}
-                        />
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.4fr 1fr' }, gap: 2 }}>
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight={700}>Usage trends</Typography>
+                    <Chip label="+18.6%" sx={{ bgcolor: 'rgba(59,130,246,0.12)', color: '#2563eb', fontWeight: 700 }} />
+                  </Box>
+                  <Box sx={{ height: 150, width: '100%', overflow: 'hidden' }}>
+                    <svg viewBox="0 0 420 120" width="100%" height="120" preserveAspectRatio="none">
+                      <path d={usagePath} fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                    {usageTrend.map((point) => (
+                      <Typography key={point.label} variant="caption" color="text.secondary">{point.label}</Typography>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Model usage</Typography>
+                  <Stack spacing={2.5}>
+                    {modelStats.map((item) => (
+                      <Box key={item.name}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                          <Typography variant="body2" color="text.secondary">{item.name}</Typography>
+                          <Typography variant="body2" fontWeight={600}>{item.value}%</Typography>
+                        </Box>
+                        <Box sx={{ width: '100%', height: 10, bgcolor: 'rgba(17,24,39,0.05)', borderRadius: 999, overflow: 'hidden' }}>
+                          <Box sx={{ width: `${Math.max(6, item.value)}%`, height: '100%', borderRadius: 999, background: `linear-gradient(90deg, ${item.color} 0%, ${item.color}CC 100%)` }} />
+                        </Box>
                       </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Box>
 
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-                  System Health
-                </Typography>
-                <Stack spacing={2}>
-                  {systemHealth.map((item) => (
-                    <Box
-                      key={item.label}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 1.5,
-                        border: 1,
-                        borderColor: 'rgba(17,24,39,0.06)',
-                        borderRadius: 3,
-                      }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        {item.label}
-                      </Typography>
-                      <Chip
-                        label={item.value}
-                        sx={{
-                          bgcolor: `${item.color}1A`,
-                          color: item.color,
-                          fontWeight: 700,
-                        }}
-                      />
-                    </Box>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Box>
-
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', lg: '1.25fr 1fr' },
-              gap: 2,
-            }}
-          >
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
-                  Recent activity
-                </Typography>
-                <List disablePadding>
-                  {activity.map((item) => (
-                    <Box key={item}>
-                      <ListItem disableGutters sx={{ py: 1.25 }}>
-                        <Box
-                          sx={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: '50%',
-                            bgcolor: 'primary.main',
-                            mr: 1.5,
-                            flexShrink: 0,
-                          }}
-                        />
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" color="text.primary">
-                              {item}
-                            </Typography>
-                          }
-                        />
-                      </ListItem>
-                      <Divider component="li" />
-                    </Box>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
-                  Active users
-                </Typography>
-                <Stack spacing={1.5}>
-                  {recentUsers.map((user) => (
-                    <Box
-                      key={`${user.email}-${user.name}`}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 2,
-                        p: 1.5,
-                        border: 1,
-                        borderColor: 'rgba(17,24,39,0.06)',
-                        borderRadius: 3,
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="body2" fontWeight={700}>
-                          {user.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {user.email}
-                        </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.25fr 1fr' }, gap: 2 }}>
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>Recent activity</Typography>
+                  <List disablePadding>
+                    {activity.map((item) => (
+                      <Box key={item}>
+                        <ListItem disableGutters sx={{ py: 1.25 }}>
+                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', mr: 1.5, flexShrink: 0 }} />
+                          <ListItemText primary={<Typography variant="body2" color="text.primary">{item}</Typography>} />
+                        </ListItem>
+                        <Divider component="li" />
                       </Box>
-                      <Chip
-                        label={user.plan}
-                        size="small"
-                        sx={{
-                          bgcolor: 'rgba(16,163,127,0.08)',
-                          color: '#0f766e',
-                          fontWeight: 700,
-                        }}
-                      />
-                    </Box>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Box>
-        </Stack>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>Active users</Typography>
+                  <Stack spacing={1.5}>
+                    {recentUsers.map((user) => (
+                      <Box key={`${user.email}-${user.name}`} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, p: 1.5, border: 1, borderColor: 'rgba(17,24,39,0.06)', borderRadius: 3 }}>
+                        <Box>
+                          <Typography variant="body2" fontWeight={700}>{user.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">{user.email}</Typography>
+                        </Box>
+                        <Chip label={user.plan} size="small" sx={{ bgcolor: 'rgba(16,163,127,0.08)', color: '#0f766e', fontWeight: 700 }} />
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Box>
+          </Stack>
+        </Box>
       </Box>
     </Box>
   );
