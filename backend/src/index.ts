@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import { config } from './config';
+import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import chatRouter from './routes/chats';
 
@@ -15,6 +16,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/chats', chatRouter);
+app.use('/api/admin', adminRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
