@@ -6,24 +6,6 @@ import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import GoogleCallback from './pages/GoogleCallback';
 
-function isAdminEmail(email: string): boolean {
-  const envList = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((value: string) => value.trim().toLowerCase())
-    .filter(Boolean);
-  const envDomains = (import.meta.env.VITE_ADMIN_DOMAINS ?? '')
-    .split(',')
-    .map((value: string) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  const normalized = email.trim().toLowerCase();
-  if (!normalized) return false;
-  if (envList.includes(normalized)) return true;
-
-  const domain = normalized.split('@')[1];
-  return Boolean(domain && envDomains.includes(domain));
-}
-
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, initializing } = useAuth();
 
@@ -45,7 +27,7 @@ function AdminRoute({ children }: { children: ReactNode }) {
     return null;
   }
 
-  if (!user || !isAdminEmail(user.email)) {
+  if (!user || user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 
