@@ -22,19 +22,20 @@ export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStat
     >
       <Box
         sx={{
-          width: 64,
-          height: 64,
-          borderRadius: 3,
+          width: 72,
+          height: 72,
+          borderRadius: 4,
           bgcolor: 'primary.main',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mb: 2,
+          boxShadow: '0 18px 38px rgba(16,163,127,0.2)',
         }}
       >
-        <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 32 }} />
+        <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 34 }} />
       </Box>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 1, letterSpacing: '-0.04em' }}>
         How can I help you today?
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -46,7 +47,7 @@ export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStat
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
           gap: 1.5,
           width: '100%',
-          maxWidth: 520,
+          maxWidth: 560,
         }}
       >
         {suggestions.map((suggestion) => (
@@ -60,10 +61,12 @@ export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStat
               whiteSpace: 'normal',
               justifyContent: 'flex-start',
               textAlign: 'left',
-              color: 'text.secondary',
+              color: 'text.primary',
               border: 1,
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
+              borderColor: 'rgba(17,24,39,0.08)',
+              bgcolor: '#ffffff',
+              borderRadius: 3,
+              boxShadow: '0 1px 2px rgba(17,24,39,0.04)',
               '& .MuiChip-label': {
                 display: 'block',
                 whiteSpace: 'normal',
@@ -71,8 +74,8 @@ export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStat
                 py: 0.5,
               },
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.06)',
-                color: 'text.primary',
+                bgcolor: 'rgba(16,163,127,0.04)',
+                borderColor: 'rgba(16,163,127,0.2)',
               },
             }}
           />
