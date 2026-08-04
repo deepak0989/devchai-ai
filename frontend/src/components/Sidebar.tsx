@@ -51,20 +51,30 @@ export default function Sidebar({
   onLogout,
 }: SidebarProps) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        bgcolor: '#f5f5f5',
+        borderRight: 1,
+        borderColor: 'divider',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2.25 }}>
         <Box
           sx={{
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             borderRadius: 2,
             bgcolor: 'primary.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: '0 8px 20px rgba(16, 163, 127, 0.18)',
           }}
         >
-          <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 18 }} />
+          <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 17 }} />
         </Box>
         <Typography variant="h6" fontWeight={700} noWrap>
           DevChat AI
@@ -77,16 +87,26 @@ export default function Sidebar({
           fullWidth
           startIcon={<AddIcon />}
           onClick={onNewChat}
-          sx={{ py: 1 }}
+          sx={{
+            py: 1.1,
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #10a37f 0%, #0f8d6c 100%)',
+            boxShadow: 'none',
+            '&:hover': { background: 'linear-gradient(135deg, #0f8d6c 0%, #0d7d5f 100%)' },
+          }}
         >
           New Chat
         </Button>
       </Box>
 
-      <Divider sx={{ mx: 2 }} />
+      <Divider sx={{ mx: 2, opacity: 0.8 }} />
 
-      <Box sx={{ px: 3, py: 1.5 }}>
-        <Typography variant="overline" color="text.secondary">
+      <Box sx={{ px: 2.5, py: 1.5 }}>
+        <Typography
+          variant="overline"
+          color="text.secondary"
+          sx={{ letterSpacing: 1.2, fontWeight: 700 }}
+        >
           Recent Chats
         </Typography>
       </Box>
@@ -107,7 +127,8 @@ export default function Sidebar({
                     onClick={() => onDeleteChat(chat.id)}
                     sx={{
                       color: 'text.secondary',
-                      '&:hover': { color: 'error.main' },
+                      opacity: selected ? 1 : 0,
+                      '&:hover': { color: 'error.main', opacity: 1 },
                     }}
                   >
                     <DeleteOutlineIcon fontSize="small" />
@@ -118,13 +139,20 @@ export default function Sidebar({
                   selected={selected}
                   onClick={() => onSelectChat(chat.id)}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 2.5,
                     mr: 4,
+                    px: 1.5,
+                    py: 0.75,
                     '&.Mui-selected': {
-                      bgcolor: 'rgba(255,255,255,0.08)',
+                      bgcolor: 'rgba(16,163,127,0.12)',
+                      border: 1,
+                      borderColor: 'rgba(16,163,127,0.2)',
                     },
                     '&.Mui-selected:hover': {
-                      bgcolor: 'rgba(255,255,255,0.12)',
+                      bgcolor: 'rgba(16,163,127,0.15)',
+                    },
+                    '&:hover': {
+                      bgcolor: 'rgba(17, 24, 39, 0.04)',
                     },
                   }}
                 >
@@ -134,7 +162,7 @@ export default function Sidebar({
                         variant="body2"
                         noWrap
                         sx={{ pr: 0.5 }}
-                        fontWeight={selected ? 600 : 400}
+                        fontWeight={selected ? 700 : 500}
                       >
                         {chat.title}
                       </Typography>
@@ -153,7 +181,7 @@ export default function Sidebar({
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ textAlign: 'center', mt: 3, px: 2 }}
+              sx={{ display: 'block', textAlign: 'center', mt: 3, px: 2, lineHeight: 1.7 }}
             >
               No conversations yet.
               <br />
@@ -163,18 +191,23 @@ export default function Sidebar({
         </List>
       </Box>
 
-      <Divider />
+      <Divider sx={{ opacity: 0.8 }} />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2 }}>
         <Avatar
-          sx={{ width: 32, height: 32, bgcolor: 'primary.dark', fontSize: 14 }}
+          sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 13, fontWeight: 700 }}
         >
           {userEmail.charAt(0).toUpperCase()}
         </Avatar>
-        <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+        <Typography variant="body2" noWrap sx={{ flex: 1, fontWeight: 500 }}>
           {userEmail}
         </Typography>
         <Tooltip title="Log out">
-          <IconButton size="small" onClick={onLogout} color="inherit">
+          <IconButton
+            size="small"
+            onClick={onLogout}
+            color="inherit"
+            sx={{ borderRadius: 2, '&:hover': { bgcolor: 'rgba(17,24,39,0.04)' } }}
+          >
             <LogoutIcon fontSize="small" />
           </IconButton>
         </Tooltip>
