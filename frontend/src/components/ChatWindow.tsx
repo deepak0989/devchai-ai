@@ -223,26 +223,38 @@ export default function ChatWindow({
   const showEmptyState = !chatId && messages.length === 0;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        background: 'linear-gradient(180deg, #f5f5f4 0%, #f8f8f7 100%)',
+      }}
+    >
       <Box
         component="header"
         sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          px: 2,
-          py: 1.25,
+          px: { xs: 2, sm: 3 },
+          py: 1.5,
           borderBottom: 1,
           borderColor: 'divider',
-          bgcolor: 'background.paper',
+          bgcolor: 'rgba(255,255,255,0.72)',
+          backdropFilter: 'blur(8px)',
         }}
       >
         {isMobile && (
-          <IconButton aria-label="Open menu" onClick={onOpenDrawer}>
+          <IconButton
+            aria-label="Open menu"
+            onClick={onOpenDrawer}
+            sx={{ borderRadius: 2, color: 'text.primary' }}
+          >
             <MenuIcon />
           </IconButton>
         )}
-        <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ flex: 1 }}>
+        <Typography variant="subtitle1" fontWeight={700} noWrap sx={{ flex: 1 }}>
           {chatId ? 'DevChat AI' : 'Start a new conversation'}
         </Typography>
         <ModelSelector value={model} onChange={onModelChange} />
@@ -254,11 +266,12 @@ export default function ChatWindow({
           flex: 1,
           overflowY: 'auto',
           px: { xs: 2, sm: 4, md: 6 },
+          py: 2,
         }}
       >
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-            <CircularProgress />
+            <CircularProgress sx={{ color: 'primary.main' }} />
           </Box>
         ) : showEmptyState ? (
           <EmptyState
@@ -266,12 +279,9 @@ export default function ChatWindow({
             onSuggestionClick={(suggestion) => sendMessage(suggestion)}
           />
         ) : (
-          <Box sx={{ maxWidth: 800, mx: 'auto', py: 3 }}>
+          <Box sx={{ maxWidth: 860, mx: 'auto', py: 1 }}>
             {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-              />
+              <MessageBubble key={message.id} message={message} />
             ))}
           </Box>
         )}
@@ -281,7 +291,7 @@ export default function ChatWindow({
         component="footer"
         sx={{ px: { xs: 2, sm: 4, md: 6 }, pb: 3, pt: 1 }}
       >
-        <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+        <Box sx={{ maxWidth: 860, mx: 'auto' }}>
           <ChatInput
             value={input}
             onChange={setInput}
