@@ -151,6 +151,21 @@ export const api = {
     });
   },
 
+  getPublicSettings() {
+    return request<{ voiceEnabled: boolean }>('/settings');
+  },
+
+  adminGetSettings() {
+    return request<{ voiceEnabled: boolean }>('/admin/settings');
+  },
+
+  adminUpdateSettings(voiceEnabled: boolean) {
+    return request<{ voiceEnabled: boolean }>('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ voiceEnabled }),
+    });
+  },
+
   adminBilling() {
     return request<{
       totalCredits: number | null;
