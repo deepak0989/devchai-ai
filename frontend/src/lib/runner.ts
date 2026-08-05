@@ -1,7 +1,10 @@
 export interface RunResult {
   output: string;
   error?: string;
+  version: string;
 }
+
+export const RUNNER_VERSION = 'v3.1';
 
 function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
   if (value === undefined) return 'undefined';
@@ -107,11 +110,12 @@ export async function runJavaScript(code: string): Promise<RunResult> {
     if (result !== undefined) {
       pushLog(result);
     }
-    return { output: logs.join('\n') || '(no output)' };
+    return { output: logs.join('\n') || '(no output)', version: RUNNER_VERSION };
   } catch (err) {
     return {
       output: logs.join('\n'),
       error: err instanceof Error ? err.message : String(err),
+      version: RUNNER_VERSION,
     };
   }
 }
@@ -174,10 +178,10 @@ export async function runPython(code: string): Promise<RunResult> {
       output += String(result) + '\n';
     }
 
-    return { output: output.trim() || '(no output)' };
+    return { output: output.trim() || '(no output)', version: RUNNER_VERSION };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return { output: '', error: message.replace(/^PythonError:\s*/, '') };
+    return { output: '', error: message.replace(/^PythonError:\s*/, ''), version: RUNNER_VERSION };
   }
 }
 
