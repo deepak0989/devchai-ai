@@ -3,18 +3,63 @@ export interface RunResult {
   error?: string;
 }
 
+function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
+  if (value === null) return 'null';
+
+  const type = typeof value;
+  if (type === 'string') return value;
+  if (type === 'number' || type === 'boolean' || type === 'bigint') return String(value);
+  if (type === 'function') return '[Function]';
+  if (type === 'symbol') return value.toString();
+  if (type === 'undefined') return 'undefined';
+
+  if (typeof Element !== 'undefined' && value instanceof Element) {
+    return `<${value.tagName.toLowerCase()}${value.id ? `#${value.id}` : ''}>`;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? 'Invalid Date' : value.toISOString();
+  }
+  if (value instanceof RegExp) {
+    return value.toString();
+  }
+
+  if (Array.isArray(value)) {
+    if (seen.has(value)) return '[Circular]';
+    seen.add(value);
+    const parts = value.map((item) => safeStringify(item, seen));
+    seen.delete(value);
+    return `[${parts.join(', ')}]`;
+  }
+
+  if (seen.has(value)) return '[Circular]';
+  seen.add(value);
+  try {
+    const keys = Object.keys(value);
+    if (keys.length === 0) {
+      const name = Object.getPrototypeOf(value)?.constructor?.name;
+      return name && name !== 'Object' ? `${name} {}` : '{}';
+    }
+    const parts = keys.map((key) => {
+      const keyValue = (value as Record<string, unknown>)[key];
+      if (typeof keyValue === 'function') {
+        return `${key}: [Function]`;
+      }
+      if (typeof keyValue === 'object' && keyValue !== null) {
+        return `${key}: ${safeStringify(keyValue, seen)}`;
+      }
+      return `${key}: ${safeStringify(keyValue, seen)}`;
+    });
+    return `{ ${parts.join(', ')} }`;
+  } catch {
+    return String(value);
+  } finally {
+    seen.delete(value);
+  }
+}
+
 function formatValue(value: unknown): string {
   if (typeof value === 'string') return value;
-  if (value === undefined) return 'undefined';
-  if (value === null) return 'null';
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch {
-      return String(value);
-    }
-  }
-  return String(value);
+  return safeStringify(value);
 }
 
 export async function runJavaScript(code: string): Promise<RunResult> {
@@ -27,6 +72,30 @@ export async function runJavaScript(code: string): Promise<RunResult> {
     warn: (...args: unknown[]) => pushLog('warn:', ...args),
     error: (...args: unknown[]) => pushLog('error:', ...args),
     debug: (...args: unknown[]) => pushLog(...args),
+    table: (data: unknown) => {
+      if (!Array.isArray(data) || data.length === 0) {
+        pushLog(data);
+        return;
+      }
+      const rows = data.map((row) =>
+        row !== null && typeof row === 'object' ? (row as Record<string, unknown>) : null
+      );
+      const keys = Array.from(
+        new Set(rows.flatMap((row) => (row ? Object.keys(row) : [])))
+      );
+      if (keys.length === 0) {
+        pushLog(data);
+        return;
+      }
+      logs.push(keys.join('\t'));
+      for (const row of rows) {
+        if (!row) {
+          logs.push('null');
+          continue;
+        }
+        logs.push(keys.map((key) => (key in row ? formatValue(row[key]) : '')).join('\t'));
+      }
+    },
   };
 
   try {
