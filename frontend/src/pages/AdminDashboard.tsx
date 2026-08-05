@@ -46,6 +46,7 @@ import {
   Tooltip,
   Typography,
   useMediaQuery,
+  Switch,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -56,10 +57,12 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
+import SettingsIcon from '@mui/icons-material/Settings';
+import MicIcon from '@mui/icons-material/Mic';
 import { api } from '../api/client';
 import { Message } from '../types';
 
-type TabKey = 'overview' | 'users' | 'billing';
+type TabKey = 'overview' | 'users' | 'billing' | 'settings';
 
 interface SummaryCard {
   label: string;
@@ -233,6 +236,11 @@ export default function AdminDashboard() {
   const [confirmUser, setConfirmUser] = useState<{ user: AdminUserRow; action: 'ban' | 'unban' } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
   const isMobile = useMediaQuery('(max-width: 900px)');
   const isSmall = useMediaQuery('(max-width: 600px)');
 
@@ -240,14 +248,18 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [overviewData, usersData, billingData] = await Promise.all([
+      const [overviewData, usersData, billingData, settingsData] = await Promise.all([
         api.adminOverview(),
         api.adminUsers(),
         api.adminBilling(),
+        api.adminGetSettings().catch(() => null),
       ]);
       setOverview(overviewData);
       setUserRows(usersData.users);
       setBilling(billingData);
+      if (settingsData) {
+        setVoiceEnabled(settingsData.voiceEnabled);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load dashboard data.');
     } finally {
@@ -336,6 +348,7 @@ export default function AdminDashboard() {
     { key: 'overview', label: 'Overview' },
     { key: 'users', label: 'Users' },
     { key: 'billing', label: 'Billing' },
+    { key: 'settings', label: 'Settings' },
   ];
 
   const renderOverview = () => {
@@ -682,6 +695,80 @@ export default function AdminDashboard() {
     );
   };
 
+  async function toggleVoiceFeature(next: boolean) {
+    setSettingsSaving(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    try {
+      const result = await api.adminUpdateSettings(next);
+      setVoiceEnabled(result.voiceEnabled);
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2000);
+    } catch (err) {
+      setVoiceEnabled(!next);
+      setSettingsError(err instanceof Error ? err.message : 'Failed to save settings.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  const renderSettings = () => {
+    if (loading) {
+      return <SkeletonCard height={280} />;
+    }
+
+    return (
+      <Stack spacing={2}>
+        <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+              <SettingsIcon sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight={700}>Feature settings</Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Changes apply instantly to all users.
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: 2.5, bgcolor: 'rgba(16,163,127,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MicIcon sx={{ color: 'primary.main' }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle1" fontWeight={700}>Voice chat</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Allow users to speak their messages (mic input) and hear AI replies (text-to-speech). Uses the browser microphone.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                {settingsSaving && <CircularProgress size={18} />}
+                {settingsSaved && (
+                  <Chip label="Saved" size="small" sx={{ bgcolor: 'rgba(16,163,127,0.12)', color: '#0f766e', fontWeight: 700 }} />
+                )}
+                <Switch
+                  checked={voiceEnabled}
+                  onChange={(event) => toggleVoiceFeature(event.target.checked)}
+                  disabled={settingsSaving}
+                  color="primary"
+                />
+              </Box>
+            </Box>
+            {settingsError && (
+              <Alert severity="error" onClose={() => setSettingsError(null)} sx={{ mt: 2, borderRadius: 2 }}>
+                {settingsError}
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      </Stack>
+    );
+  };
+
   const renderBilling = () => {
     if (loading) {
       return (
@@ -862,6 +949,7 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && renderOverview()}
             {activeTab === 'users' && renderUsers()}
             {activeTab === 'billing' && renderBilling()}
+            {activeTab === 'settings' && renderSettings()}
           </Stack>
         </Box>
       </Box>
