@@ -3,13 +3,24 @@ import {
   Box,
   CircularProgress,
   IconButton,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import { streamChatMessage } from '../api/chat';
 import { api } from '../api/client';
+import {
+  createSpeechRecognizer,
+  isSpeechRecognitionSupported,
+  isSpeechSynthesisSupported,
+  speakText,
+  stopSpeaking,
+  SpeechRecognizer,
+} from '../lib/speech';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
@@ -53,18 +64,76 @@ export default function ChatWindow({
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [input, setInput] = useState('');
+  const [listening, setListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const streamingRef = useRef(false);
   const streamChatIdRef = useRef<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognizer | null>(null);
+  const finalTranscriptRef = useRef('');
+  const voiceEnabledRef = useRef(voiceEnabled);
 
   useEffect(() => {
     streamingRef.current = streaming;
   }, [streaming]);
 
   useEffect(() => {
+    voiceEnabledRef.current = voiceEnabled;
+  }, [voiceEnabled]);
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  function toggleVoiceInput() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    if (!isSpeechRecognitionSupported()) return;
+
+    stopSpeaking();
+    finalTranscriptRef.current = '';
+
+    const recognizer = createSpeechRecognizer();
+    if (!recognizer) return;
+
+    recognitionRef.current = recognizer;
+    recognizer.onstart = () => setListening(true);
+    recognizer.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscriptRef.current += result[0].transcript;
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      setInput(finalTranscriptRef.current + interim);
+    };
+    recognizer.onerror = () => {
+      setListening(false);
+    };
+    recognizer.onend = () => {
+      setListening(false);
+    };
+    recognizer.start();
+  }
+
+  useEffect(() => {
     let cancelled = false;
+
+    stopSpeaking();
 
     async function loadMessages() {
       if (!chatId) {
@@ -119,6 +188,7 @@ export default function ChatWindow({
   }, [messages, loading]);
 
   function stopStreaming() {
+    stopSpeaking();
     abortRef.current?.abort();
     abortRef.current = null;
     setStreaming(false);
@@ -127,6 +197,12 @@ export default function ChatWindow({
   async function sendMessage(text: string) {
     const content = text.trim();
     if (!content || streaming) return;
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      setListening(false);
+    }
 
     let targetChatId = chatId;
     if (!targetChatId) {
@@ -174,6 +250,9 @@ export default function ChatWindow({
           },
           onDone: () => {
             failed = false;
+            if (voiceEnabledRef.current && accumulated.trim().length > 0) {
+              speakText(accumulated);
+            }
           },
           onError: (message) => {
             failed = true;
@@ -261,6 +340,21 @@ export default function ChatWindow({
         <Typography variant="subtitle1" fontWeight={700} noWrap sx={{ flex: 1 }}>
           {chatId ? 'DevChat AI' : 'Start a new conversation'}
         </Typography>
+        {isSpeechSynthesisSupported() && (
+          <Tooltip title={voiceEnabled ? 'Turn off voice replies' : 'Turn on voice replies'}>
+            <IconButton
+              aria-label="Toggle voice replies"
+              onClick={() => setVoiceEnabled((enabled) => !enabled)}
+              sx={{
+                borderRadius: 2,
+                color: voiceEnabled ? 'primary.main' : 'text.secondary',
+                bgcolor: voiceEnabled ? 'rgba(16,163,127,0.08)' : 'rgba(17,24,39,0.04)',
+              }}
+            >
+              {voiceEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+            </IconButton>
+          </Tooltip>
+        )}
         <ModelSelector value={model} onChange={onModelChange} />
       </Box>
 
@@ -303,7 +397,10 @@ export default function ChatWindow({
             onStop={stopStreaming}
             streaming={streaming}
             disabled={loading}
-            placeholder="Message DevChat AI..."
+            placeholder={listening ? 'Listening...' : 'Message DevChat AI...'}
+            micSupported={isSpeechRecognitionSupported()}
+            micActive={listening}
+            onMicToggle={toggleVoiceInput}
           />
           <Typography
             variant="caption"
