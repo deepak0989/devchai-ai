@@ -101,6 +101,9 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
         <Box sx={{ px: 1.5, py: 1, borderTop: 1, borderColor: 'rgba(17,24,39,0.06)', bgcolor: '#0f172a' }}>
           <Typography variant="caption" fontWeight={700} sx={{ color: runResult.error ? '#f87171' : '#6ee7b7' }}>
             {runResult.error ? 'Error' : 'Output'}
+            <Box component="span" sx={{ ml: 1, color: '#475569', fontWeight: 500 }}>
+              runner {runResult.version}
+            </Box>
           </Typography>
           <Box
             component="pre"
