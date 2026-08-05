@@ -4,14 +4,14 @@ export interface RunResult {
 }
 
 function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
+  if (value === undefined) return 'undefined';
   if (value === null) return 'null';
-
-  const type = typeof value;
-  if (type === 'string') return value;
-  if (type === 'number' || type === 'boolean' || type === 'bigint') return String(value);
-  if (type === 'function') return '[Function]';
-  if (type === 'symbol') return value.toString();
-  if (type === 'undefined') return 'undefined';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (typeof value === 'function') return '[Function]';
+  if (typeof value === 'symbol') return value.toString();
 
   if (typeof Element !== 'undefined' && value instanceof Element) {
     return `<${value.tagName.toLowerCase()}${value.id ? `#${value.id}` : ''}>`;
@@ -23,6 +23,8 @@ function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
     return value.toString();
   }
 
+  const obj = value as object;
+
   if (Array.isArray(value)) {
     if (seen.has(value)) return '[Circular]';
     seen.add(value);
@@ -31,21 +33,18 @@ function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
     return `[${parts.join(', ')}]`;
   }
 
-  if (seen.has(value)) return '[Circular]';
-  seen.add(value);
+  if (seen.has(obj)) return '[Circular]';
+  seen.add(obj);
   try {
-    const keys = Object.keys(value);
+    const keys = Object.keys(obj);
     if (keys.length === 0) {
-      const name = Object.getPrototypeOf(value)?.constructor?.name;
+      const name = Object.getPrototypeOf(obj)?.constructor?.name;
       return name && name !== 'Object' ? `${name} {}` : '{}';
     }
     const parts = keys.map((key) => {
-      const keyValue = (value as Record<string, unknown>)[key];
+      const keyValue = (obj as Record<string, unknown>)[key];
       if (typeof keyValue === 'function') {
         return `${key}: [Function]`;
-      }
-      if (typeof keyValue === 'object' && keyValue !== null) {
-        return `${key}: ${safeStringify(keyValue, seen)}`;
       }
       return `${key}: ${safeStringify(keyValue, seen)}`;
     });
@@ -53,7 +52,7 @@ function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
   } catch {
     return String(value);
   } finally {
-    seen.delete(value);
+    seen.delete(obj);
   }
 }
 
