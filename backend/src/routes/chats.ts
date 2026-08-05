@@ -7,6 +7,7 @@ import {
   streamChatCompletion,
   ModelId,
 } from '../services/openrouter';
+import { enforceChatLimit, enforceMessageLimit } from '../services/limits';
 
 interface ChatRow {
   id: string;
@@ -66,6 +67,12 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 
 router.post('/', requireAuth, async (req: AuthRequest, res) => {
   const body = req.body ?? {};
+
+  const limitCheck = await enforceChatLimit(req.user!.id);
+  if (limitCheck.blocked) {
+    return res.status(429).json({ error: limitCheck.message ?? 'Chat limit reached' });
+  }
+
   const model: ModelId = isSupportedModel(body.model) ? body.model : DEFAULT_MODEL;
   const title =
     typeof body.title === 'string' && body.title.trim().length > 0
@@ -131,6 +138,11 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
   const chat = await findChatForUser(req.user!.id, req.params.id);
   if (!chat) {
     return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  const limitCheck = await enforceMessageLimit(req.user!.id);
+  if (limitCheck.blocked) {
+    return res.status(429).json({ error: limitCheck.message ?? 'Message limit reached' });
   }
 
   if (chat.title === 'New Chat') {
