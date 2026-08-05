@@ -57,6 +57,7 @@ export default function ChatWindow({
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const streamingRef = useRef(false);
+  const streamChatIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     streamingRef.current = streaming;
@@ -76,8 +77,10 @@ export default function ChatWindow({
         setLoading(true);
         setMessages([]);
       }
-      abortRef.current?.abort();
-      abortRef.current = null;
+      if (streamChatIdRef.current !== null && streamChatIdRef.current !== chatId) {
+        abortRef.current?.abort();
+        abortRef.current = null;
+      }
 
       try {
         const { messages: history } = await api.getMessages(chatId);
@@ -131,6 +134,7 @@ export default function ChatWindow({
       if (!chat) return;
       targetChatId = (chat as { id: string }).id;
     }
+    streamChatIdRef.current = targetChatId;
 
     const userMessage: LocalMessage = {
       id: crypto.randomUUID(),
