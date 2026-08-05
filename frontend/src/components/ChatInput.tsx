@@ -2,6 +2,7 @@ import { FormEvent } from 'react';
 import { IconButton, InputBase, Paper } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
+import MicIcon from '@mui/icons-material/Mic';
 
 interface ChatInputProps {
   value: string;
@@ -11,6 +12,9 @@ interface ChatInputProps {
   streaming: boolean;
   disabled: boolean;
   placeholder: string;
+  micSupported: boolean;
+  micActive: boolean;
+  onMicToggle: () => void;
 }
 
 export default function ChatInput({
@@ -21,6 +25,9 @@ export default function ChatInput({
   streaming,
   disabled,
   placeholder,
+  micSupported,
+  micActive,
+  onMicToggle,
 }: ChatInputProps) {
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -74,6 +81,28 @@ export default function ChatInput({
         }}
         inputProps={{ 'aria-label': placeholder, autoFocus: true }}
       />
+      {micSupported && (
+        <IconButton
+          onClick={onMicToggle}
+          aria-label={micActive ? 'Stop voice input' : 'Start voice input'}
+          sx={{
+            flexShrink: 0,
+            mb: 0.25,
+            color: micActive ? '#fff' : 'text.primary',
+            bgcolor: micActive ? 'rgba(239, 68, 68, 0.9)' : 'rgba(17,24,39,0.04)',
+            animation: micActive ? 'pulse 1.4s ease-in-out infinite' : 'none',
+            '@keyframes pulse': {
+              '0%, 100%': { boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.5)' },
+              '50%': { boxShadow: '0 0 0 8px rgba(239, 68, 68, 0)' },
+            },
+            '&:hover': {
+              bgcolor: micActive ? 'rgba(239, 68, 68, 1)' : 'rgba(16,163,127,0.1)',
+            },
+          }}
+        >
+          {micActive ? <StopCircleIcon /> : <MicIcon />}
+        </IconButton>
+      )}
       {streaming ? (
         <IconButton
           onClick={onStop}
