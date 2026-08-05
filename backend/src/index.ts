@@ -5,6 +5,8 @@ import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import chatRouter from './routes/chats';
 import settingsRouter from './routes/settings';
+import agentRouter from './routes/agent';
+import { maintenanceGuard } from './middleware/maintenance';
 
 const app = express();
 
@@ -16,7 +18,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
-app.use('/api/chats', chatRouter);
+app.use('/api/chats', maintenanceGuard, chatRouter);
+app.use('/api/agent', maintenanceGuard, agentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/settings', settingsRouter);
 
