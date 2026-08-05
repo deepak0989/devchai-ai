@@ -41,6 +41,21 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+function groupLabel(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 86400000);
+  const startOfWeek = new Date(startOfToday.getTime() - 7 * 86400000);
+
+  if (date >= startOfToday) return 'Today';
+  if (date >= startOfYesterday) return 'Yesterday';
+  if (date >= startOfWeek) return 'Previous 7 days';
+  return 'Older';
+}
+
+const GROUP_ORDER = ['Today', 'Yesterday', 'Previous 7 days', 'Older'];
+
 export default function Sidebar({
   chats,
   activeChatId,
@@ -112,83 +127,106 @@ export default function Sidebar({
       </Box>
 
       <Box sx={{ flex: 1, overflowY: 'auto', px: 1, pb: 1 }}>
-        <List disablePadding>
-          {chats.map((chat) => {
-            const selected = chat.id === activeChatId;
+        {chats.length === 0 ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ display: 'block', textAlign: 'center', mt: 3, px: 2, lineHeight: 1.7 }}
+          >
+            No conversations yet.
+            <br />
+            Start a new chat!
+          </Typography>
+        ) : (
+          GROUP_ORDER.map((group) => {
+            const groupChats = chats.filter((chat) => groupLabel(chat.updated_at) === group);
+            if (groupChats.length === 0) return null;
             return (
-              <ListItem
-                key={chat.id}
-                disablePadding
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    aria-label="Delete chat"
-                    onClick={() => onDeleteChat(chat.id)}
-                    sx={{
-                      color: 'text.secondary',
-                      opacity: selected ? 1 : 0,
-                      '&:hover': { color: 'error.main', opacity: 1 },
-                    }}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                }
-              >
-                <ListItemButton
-                  selected={selected}
-                  onClick={() => onSelectChat(chat.id)}
+              <Box key={group} sx={{ mb: 1.5 }}>
+                <Typography
+                  variant="overline"
                   sx={{
-                    borderRadius: 2.5,
-                    mr: 4,
+                    display: 'block',
                     px: 1.5,
                     py: 0.75,
-                    '&.Mui-selected': {
-                      bgcolor: 'rgba(16,163,127,0.12)',
-                      border: 1,
-                      borderColor: 'rgba(16,163,127,0.2)',
-                    },
-                    '&.Mui-selected:hover': {
-                      bgcolor: 'rgba(16,163,127,0.15)',
-                    },
-                    '&:hover': {
-                      bgcolor: 'rgba(17, 24, 39, 0.04)',
-                    },
+                    color: 'text.secondary',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    letterSpacing: 1.1,
                   }}
                 >
-                  <ListItemText
-                    primary={
-                      <Typography
-                        variant="body2"
-                        noWrap
-                        sx={{ pr: 0.5 }}
-                        fontWeight={selected ? 700 : 500}
+                  {group}
+                </Typography>
+                <List disablePadding>
+                  {groupChats.map((chat) => {
+                    const selected = chat.id === activeChatId;
+                    return (
+                      <ListItem
+                        key={chat.id}
+                        disablePadding
+                        secondaryAction={
+                          <IconButton
+                            edge="end"
+                            size="small"
+                            aria-label="Delete chat"
+                            onClick={() => onDeleteChat(chat.id)}
+                            sx={{
+                              color: 'text.secondary',
+                              opacity: selected ? 1 : 0,
+                              '&:hover': { color: 'error.main', opacity: 1 },
+                            }}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        }
                       >
-                        {chat.title}
-                      </Typography>
-                    }
-                    secondary={
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(chat.updated_at)}
-                      </Typography>
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
+                        <ListItemButton
+                          selected={selected}
+                          onClick={() => onSelectChat(chat.id)}
+                          sx={{
+                            borderRadius: 2.5,
+                            mr: 4,
+                            px: 1.5,
+                            py: 0.75,
+                            '&.Mui-selected': {
+                              bgcolor: 'rgba(16,163,127,0.12)',
+                              border: 1,
+                              borderColor: 'rgba(16,163,127,0.2)',
+                            },
+                            '&.Mui-selected:hover': {
+                              bgcolor: 'rgba(16,163,127,0.15)',
+                            },
+                            '&:hover': {
+                              bgcolor: 'rgba(17, 24, 39, 0.04)',
+                            },
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Typography
+                                variant="body2"
+                                noWrap
+                                sx={{ pr: 0.5 }}
+                                fontWeight={selected ? 700 : 500}
+                              >
+                                {chat.title}
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="text.secondary">
+                                {formatDate(chat.updated_at)}
+                              </Typography>
+                            }
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Box>
             );
-          })}
-          {chats.length === 0 && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ display: 'block', textAlign: 'center', mt: 3, px: 2, lineHeight: 1.7 }}
-            >
-              No conversations yet.
-              <br />
-              Start a new chat!
-            </Typography>
-          )}
-        </List>
+          })
+        )}
       </Box>
 
       <Divider sx={{ opacity: 0.8 }} />
