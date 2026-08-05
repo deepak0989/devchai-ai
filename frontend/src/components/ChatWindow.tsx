@@ -21,6 +21,8 @@ import {
   stopSpeaking,
   SpeechRecognizer,
 } from '../lib/speech';
+import { DEV_COMMANDS, applyDevCommand, findDevCommand, DevCommand } from '../lib/devCommands';
+import { getAppSettings, loadAppSettings } from '../lib/settings';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
@@ -40,6 +42,7 @@ interface LocalMessage {
   role: 'user' | 'assistant';
   content: string;
   error?: boolean;
+  command?: string;
 }
 
 const SUGGESTIONS = [
@@ -66,6 +69,7 @@ export default function ChatWindow({
   const [input, setInput] = useState('');
   const [listening, setListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceFeature, setVoiceFeature] = useState(() => getAppSettings().voiceEnabled);
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -84,6 +88,16 @@ export default function ChatWindow({
   }, [voiceEnabled]);
 
   useEffect(() => {
+    loadAppSettings().then((settings) => {
+      setVoiceFeature(settings.voiceEnabled);
+      if (!settings.voiceEnabled) {
+        setVoiceEnabled(false);
+        stopSpeaking();
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     return () => {
       stopSpeaking();
       recognitionRef.current?.abort();
@@ -91,7 +105,13 @@ export default function ChatWindow({
     };
   }, []);
 
+  function handleCommandSelect(command: DevCommand) {
+    setInput(`/${command.name} `);
+  }
+
   function toggleVoiceInput() {
+    if (!voiceFeature) return;
+
     if (listening) {
       recognitionRef.current?.stop();
       recognitionRef.current = null;
@@ -198,6 +218,17 @@ export default function ChatWindow({
     const content = text.trim();
     if (!content || streaming) return;
 
+    let commandName: string | undefined;
+    let promptContent = content;
+    const commandMatch = /^\/([a-zA-Z]+)\s*(.*)$/s.exec(content);
+    if (commandMatch) {
+      const command = findDevCommand(commandMatch[1]);
+      if (command) {
+        commandName = command.label;
+        promptContent = applyDevCommand(command, commandMatch[2] ?? '');
+      }
+    }
+
     if (listening) {
       recognitionRef.current?.stop();
       recognitionRef.current = null;
@@ -216,6 +247,7 @@ export default function ChatWindow({
       id: crypto.randomUUID(),
       role: 'user',
       content,
+      command: commandName,
     };
     const assistantId = crypto.randomUUID();
     const assistantMessage: LocalMessage = {
@@ -237,7 +269,7 @@ export default function ChatWindow({
     try {
       await streamChatMessage(
         targetChatId,
-        content,
+        promptContent,
         model,
         {
           onDelta: (delta) => {
@@ -340,7 +372,7 @@ export default function ChatWindow({
         <Typography variant="subtitle1" fontWeight={700} noWrap sx={{ flex: 1 }}>
           {chatId ? 'DevChat AI' : 'Start a new conversation'}
         </Typography>
-        {isSpeechSynthesisSupported() && (
+        {isSpeechSynthesisSupported() && voiceFeature && (
           <Tooltip title={voiceEnabled ? 'Turn off voice replies' : 'Turn on voice replies'}>
             <IconButton
               aria-label="Toggle voice replies"
@@ -375,6 +407,7 @@ export default function ChatWindow({
           <EmptyState
             suggestions={SUGGESTIONS}
             onSuggestionClick={(suggestion) => sendMessage(suggestion)}
+            onCommandClick={(command) => setInput(`${command} `)}
           />
         ) : (
           <Box sx={{ maxWidth: 860, mx: 'auto', py: 1 }}>
@@ -398,9 +431,11 @@ export default function ChatWindow({
             streaming={streaming}
             disabled={loading}
             placeholder={listening ? 'Listening...' : 'Message DevChat AI...'}
-            micSupported={isSpeechRecognitionSupported()}
+            micSupported={isSpeechRecognitionSupported() && voiceFeature}
             micActive={listening}
             onMicToggle={toggleVoiceInput}
+            commands={DEV_COMMANDS}
+            onCommandSelect={handleCommandSelect}
           />
           <Typography
             variant="caption"
