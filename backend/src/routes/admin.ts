@@ -2,6 +2,7 @@ import { NextFunction, Response, Router } from 'express';
 import { supabase } from '../db/supabase';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { config } from '../config';
+import { getFeatureSettings, saveFeatureSettings } from './settings';
 
 const router = Router();
 
@@ -470,6 +471,31 @@ router.get('/billing', requireAuth, requireAdmin, async (_req: AuthRequest, res)
   } catch (error) {
     console.error('Admin billing error:', error);
     return res.status(500).json({ error: 'Failed to load usage data' });
+  }
+});
+
+router.get('/settings', requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
+  try {
+    const settings = await getFeatureSettings();
+    return res.json(settings);
+  } catch (error) {
+    console.error('Admin settings error:', error);
+    return res.status(500).json({ error: 'Failed to load settings' });
+  }
+});
+
+router.put('/settings', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const voiceEnabled = req.body?.voiceEnabled;
+    if (typeof voiceEnabled !== 'boolean') {
+      return res.status(400).json({ error: 'voiceEnabled must be a boolean' });
+    }
+
+    await saveFeatureSettings(voiceEnabled);
+    return res.json({ voiceEnabled });
+  } catch (error) {
+    console.error('Admin settings update error:', error);
+    return res.status(500).json({ error: 'Failed to save settings' });
   }
 });
 
