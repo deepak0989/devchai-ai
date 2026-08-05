@@ -37,7 +37,7 @@ function AdminRoute({ children }: { children: ReactNode }) {
 }
 
 function MaintenanceGate({ children }: { children: ReactNode }) {
-  const { user, initializing } = useAuth();
+  const { user } = useAuth();
   const [maintenance, setMaintenance] = useState<{
     enabled: boolean;
     message: string;
@@ -51,14 +51,7 @@ function MaintenanceGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (maintenance && maintenance.enabled && user?.role !== 'admin') {
-    if (initializing && user === null) {
-      return null;
-    }
     return <MaintenanceScreen message={maintenance.message} />;
-  }
-
-  if (initializing) {
-    return null;
   }
 
   return <>{children}</>;
@@ -68,29 +61,29 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <MaintenanceGate>
-          <Routes>
-            <Route path="/login" element={<AuthPage />} />
-            <Route path="/auth/callback" element={<GoogleCallback />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
+        <Routes>
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<GoogleCallback />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <MaintenanceGate>
                   <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminDashboard />
-                </AdminRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </MaintenanceGate>
+                </MaintenanceGate>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </AuthProvider>
     </BrowserRouter>
   );
