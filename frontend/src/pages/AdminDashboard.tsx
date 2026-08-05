@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -59,7 +59,10 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MicIcon from '@mui/icons-material/Mic';
-import { api } from '../api/client';
+import TuneIcon from '@mui/icons-material/Tune';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import { api, AdminUserRow } from '../api/client';
 import { Message } from '../types';
 
 type TabKey = 'overview' | 'users' | 'billing' | 'settings';
@@ -89,15 +92,10 @@ interface OverviewResponse {
   lastUpdated: string;
 }
 
-interface AdminUserRow {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  chat_count: number;
-  created_at: string;
-  last_seen: string;
+interface AdminUsersResponse {
+  users: AdminUserRow[];
+  total: number;
+  counts: { all: number; admin: number; active: number; disabled: number };
 }
 
 interface UserChatsResponse {
@@ -225,6 +223,8 @@ export default function AdminDashboard() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [usersRefreshing, setUsersRefreshing] = useState(false);
+  const [usersCounts, setUsersCounts] = useState<AdminUsersResponse['counts'] | null>(null);
 
   const [chatsDialogUser, setChatsDialogUser] = useState<AdminUserRow | null>(null);
   const [chatsData, setChatsData] = useState<UserChatsResponse | null>(null);
@@ -237,9 +237,17 @@ export default function AdminDashboard() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  const [limitsDialogUser, setLimitsDialogUser] = useState<AdminUserRow | null>(null);
+  const [limitsDraft, setLimitsDraft] = useState({ maxChats: '', maxMessages: '', note: '' });
+  const [limitsSaving, setLimitsSaving] = useState(false);
+  const [limitsError, setLimitsError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const isMobile = useMediaQuery('(max-width: 900px)');
   const isSmall = useMediaQuery('(max-width: 600px)');
@@ -256,9 +264,12 @@ export default function AdminDashboard() {
       ]);
       setOverview(overviewData);
       setUserRows(usersData.users);
+      setUsersCounts(usersData.counts);
       setBilling(billingData);
       if (settingsData) {
         setVoiceEnabled(settingsData.voiceEnabled);
+        setMaintenanceEnabled(settingsData.maintenance.enabled);
+        setMaintenanceMessage(settingsData.maintenance.message);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load dashboard data.');
@@ -267,25 +278,40 @@ export default function AdminDashboard() {
     }
   }
 
+  const loadUsers = useCallback(
+    async (query: string, role: string, status: string) => {
+      setUsersRefreshing(true);
+      try {
+        const data = await api.adminUsers({
+          search: query || undefined,
+          role,
+          status,
+        });
+        setUserRows(data.users);
+        setUsersCounts(data.counts);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Failed to load users.');
+      } finally {
+        setUsersRefreshing(false);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     loadData();
   }, []);
 
-  const filteredUsers = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return userRows.filter((user) => {
-      if (query && !user.email.toLowerCase().includes(query) && !user.name.toLowerCase().includes(query)) {
-        return false;
-      }
-      if (roleFilter !== 'all' && user.role !== roleFilter) return false;
-      if (statusFilter !== 'all' && user.status !== statusFilter) return false;
-      return true;
-    });
-  }, [userRows, search, roleFilter, statusFilter]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadUsers(search, roleFilter, statusFilter);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, roleFilter, statusFilter, loadUsers]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(userRows.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
-  const pagedUsers = filteredUsers.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pagedUsers = userRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const topUsersByChats = useMemo(
     () =>
@@ -341,6 +367,76 @@ export default function AdminDashboard() {
       setActionError(err instanceof Error ? err.message : 'Failed to update status.');
     } finally {
       setActionBusyId(null);
+    }
+  }
+
+  function openLimitsDialog(user: AdminUserRow) {
+    setLimitsDialogUser(user);
+    setLimitsDraft({
+      maxChats: user.limits.maxChats !== null ? String(user.limits.maxChats) : '',
+      maxMessages: user.limits.maxMessages !== null ? String(user.limits.maxMessages) : '',
+      note: user.limits.note ?? '',
+    });
+    setLimitsError(null);
+  }
+
+  async function saveLimits() {
+    if (!limitsDialogUser) return;
+    setLimitsSaving(true);
+    setLimitsError(null);
+    try {
+      const maxChats = limitsDraft.maxChats.trim() === '' ? null : Number(limitsDraft.maxChats);
+      const maxMessages =
+        limitsDraft.maxMessages.trim() === '' ? null : Number(limitsDraft.maxMessages);
+      const note = limitsDraft.note.trim() === '' ? null : limitsDraft.note.trim();
+
+      if (maxChats !== null && (!Number.isInteger(maxChats) || maxChats < 1)) {
+        setLimitsError('Max chats must be a positive whole number or empty.');
+        return;
+      }
+      if (maxMessages !== null && (!Number.isInteger(maxMessages) || maxMessages < 1)) {
+        setLimitsError('Max messages must be a positive whole number or empty.');
+        return;
+      }
+
+      const result = await api.adminSetLimits(limitsDialogUser.id, {
+        maxChats,
+        maxMessages,
+        note,
+      });
+      setUserRows((rows) =>
+        rows.map((row) =>
+          row.id === limitsDialogUser.id ? { ...row, limits: result.limits } : row
+        )
+      );
+      setLimitsDialogUser(null);
+    } catch (err) {
+      setLimitsError(err instanceof Error ? err.message : 'Failed to save limits.');
+    } finally {
+      setLimitsSaving(false);
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const blob = await api.adminExportUsers({
+        search: search.trim() || undefined,
+        role: roleFilter,
+        status: statusFilter,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `devchat-users-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to export users.');
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -526,13 +622,28 @@ export default function AdminDashboard() {
       <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
         <CardContent sx={{ p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2.5 }}>
-            <Box>
-              <Typography variant="h6" fontWeight={700}>User management</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {userRows.length} registered user{userRows.length === 1 ? '' : 's'}
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>User management</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {usersCounts
+                    ? `${usersCounts.all} registered · ${usersCounts.admin} admin · ${usersCounts.active} active`
+                    : `${userRows.length} registered user${userRows.length === 1 ? '' : 's'}`}
+                </Typography>
+              </Box>
+              {usersRefreshing && <CircularProgress size={16} sx={{ ml: 0.5 }} />}
             </Box>
             <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                size="medium"
+                startIcon={exporting ? <CircularProgress size={16} /> : <FileDownloadIcon />}
+                onClick={handleExport}
+                disabled={exporting || userRows.length === 0}
+                sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 3, borderColor: 'rgba(17,24,39,0.15)' }}
+              >
+                Export CSV
+              </Button>
               <TextField
                 size="small"
                 placeholder="Search by name or email"
@@ -593,6 +704,7 @@ export default function AdminDashboard() {
                   <TableCell>Role</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Chats</TableCell>
+                  <TableCell>Limits</TableCell>
                   <TableCell>Joined</TableCell>
                   <TableCell>Last seen</TableCell>
                   <TableCell align="right">Actions</TableCell>
@@ -601,7 +713,7 @@ export default function AdminDashboard() {
               <TableBody>
                 {pagedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                       {userRows.length === 0 ? 'No users registered yet.' : 'No users match your filters.'}
                     </TableCell>
                   </TableRow>
@@ -642,6 +754,28 @@ export default function AdminDashboard() {
                         <Typography variant="body2" fontWeight={600}>{user.chat_count}</Typography>
                       </TableCell>
                       <TableCell>
+                        {user.limits.maxChats === null && user.limits.maxMessages === null ? (
+                          <Typography variant="body2" color="text.secondary">—</Typography>
+                        ) : (
+                          <Stack direction="row" spacing={0.75} sx={{ flexWrap: 'wrap' }}>
+                            {user.limits.maxChats !== null && (
+                              <Chip
+                                size="small"
+                                label={`${user.limits.maxChats} chats`}
+                                sx={{ bgcolor: 'rgba(245,158,11,0.12)', color: '#b45309', fontWeight: 700, height: 20 }}
+                              />
+                            )}
+                            {user.limits.maxMessages !== null && (
+                              <Chip
+                                size="small"
+                                label={`${user.limits.maxMessages} msgs`}
+                                sx={{ bgcolor: 'rgba(139,92,246,0.12)', color: '#6d28d9', fontWeight: 700, height: 20 }}
+                              />
+                            )}
+                          </Stack>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Typography variant="body2" color="text.secondary">{formatDate(user.created_at)}</Typography>
                       </TableCell>
                       <TableCell>
@@ -653,6 +787,13 @@ export default function AdminDashboard() {
                             <span>
                               <IconButton size="small" onClick={() => openChats(user)}>
                                 <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title="Set limits">
+                            <span>
+                              <IconButton size="small" onClick={() => openLimitsDialog(user)}>
+                                <TuneIcon fontSize="small" sx={{ color: '#6d28d9' }} />
                               </IconButton>
                             </span>
                           </Tooltip>
@@ -700,13 +841,32 @@ export default function AdminDashboard() {
     setSettingsError(null);
     setSettingsSaved(false);
     try {
-      const result = await api.adminUpdateSettings(next);
+      const result = await api.adminUpdateSettings({ voiceEnabled: next });
       setVoiceEnabled(result.voiceEnabled);
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 2000);
     } catch (err) {
       setVoiceEnabled(!next);
       setSettingsError(err instanceof Error ? err.message : 'Failed to save settings.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  async function saveMaintenance(enabled: boolean, message: string) {
+    setSettingsSaving(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    try {
+      const result = await api.adminUpdateSettings({
+        maintenance: { enabled, message },
+      });
+      setMaintenanceEnabled(result.maintenance.enabled);
+      setMaintenanceMessage(result.maintenance.message);
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2000);
+    } catch (err) {
+      setSettingsError(err instanceof Error ? err.message : 'Failed to save maintenance mode.');
     } finally {
       setSettingsSaving(false);
     }
@@ -762,6 +922,66 @@ export default function AdminDashboard() {
               <Alert severity="error" onClose={() => setSettingsError(null)} sx={{ mt: 2, borderRadius: 2 }}>
                 {settingsError}
               </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: 2.5, bgcolor: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <BuildCircleIcon sx={{ color: '#d97706' }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle1" fontWeight={700}>Maintenance mode</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Temporarily block all non-admin users with a custom message. Admins keep full access.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                {settingsSaving && <CircularProgress size={18} />}
+                {settingsSaved && (
+                  <Chip label="Saved" size="small" sx={{ bgcolor: 'rgba(16,163,127,0.12)', color: '#0f766e', fontWeight: 700 }} />
+                )}
+                <Switch
+                  checked={maintenanceEnabled}
+                  onChange={(event) => saveMaintenance(event.target.checked, maintenanceMessage)}
+                  disabled={settingsSaving}
+                  color="warning"
+                />
+              </Box>
+            </Box>
+
+            {maintenanceEnabled && (
+              <Box sx={{ mt: 2.5, p: 2, borderRadius: 3, border: 1, borderColor: 'rgba(245,158,11,0.3)', bgcolor: 'rgba(245,158,11,0.06)' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ color: '#92400e', mb: 1 }}>
+                  Maintenance is active — non-admin users are blocked.
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  size="small"
+                  label="Public message"
+                  value={maintenanceMessage}
+                  onChange={(event) => setMaintenanceMessage(event.target.value)}
+                  placeholder="We are performing scheduled maintenance. Please check back shortly."
+                  disabled={settingsSaving}
+                  sx={{ mb: 1.5, '& .MuiOutlinedInput-root': { bgcolor: '#ffffff' } }}
+                />
+                <Button
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  disabled={settingsSaving}
+                  onClick={() => saveMaintenance(true, maintenanceMessage)}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 3 }}
+                >
+                  Update message
+                </Button>
+              </Box>
             )}
           </CardContent>
         </Card>
@@ -1053,6 +1273,67 @@ export default function AdminDashboard() {
           >
             {actionBusyId !== null ? <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} /> : null}
             {confirmUser?.action === 'ban' ? 'Disable' : 'Re-enable'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={limitsDialogUser !== null} onClose={() => setLimitsDialogUser(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={700}>Set limits</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {limitsDialogUser?.name} ({limitsDialogUser?.email}) · {limitsDialogUser?.chat_count} chats
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Max chats (empty = unlimited)"
+              type="number"
+              inputProps={{ min: 1, step: 1 }}
+              value={limitsDraft.maxChats}
+              onChange={(event) => setLimitsDraft((draft) => ({ ...draft, maxChats: event.target.value }))}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="Max messages (empty = unlimited)"
+              type="number"
+              inputProps={{ min: 1, step: 1 }}
+              value={limitsDraft.maxMessages}
+              onChange={(event) => setLimitsDraft((draft) => ({ ...draft, maxMessages: event.target.value }))}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="Custom message when blocked"
+              multiline
+              minRows={2}
+              value={limitsDraft.note}
+              onChange={(event) => setLimitsDraft((draft) => ({ ...draft, note: event.target.value }))}
+              placeholder="e.g. Free trial exhausted — contact support to upgrade."
+            />
+            <Typography variant="caption" color="text.secondary">
+              Users are blocked with a 429 response once they reach the limit. Leave all fields empty and save to remove limits.
+            </Typography>
+            {limitsError && (
+              <Alert severity="error" onClose={() => setLimitsError(null)} sx={{ borderRadius: 2 }}>
+                {limitsError}
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setLimitsDialogUser(null)} color="inherit">Cancel</Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={limitsSaving}
+            onClick={saveLimits}
+          >
+            {limitsSaving ? <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} /> : null}
+            Save limits
           </Button>
         </DialogActions>
       </Dialog>
