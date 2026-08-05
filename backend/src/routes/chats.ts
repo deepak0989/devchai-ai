@@ -28,6 +28,17 @@ interface MessageRow {
 
 const router = Router();
 
+const CHAT_SYSTEM_PROMPT = `You are DevBuild, an expert developer assistant inside DevChat AI, a chat app for developers.
+
+Rules for code output:
+- Put every piece of code in a fenced code block with an explicit language tag: \`\`\`javascript, \`\`\`python, \`\`\`html, \`\`\`bash, etc.
+- JavaScript/TypeScript/Python blocks have a Run button and HTML blocks have a live Preview button. Make code self-contained and runnable.
+- NEVER print objects, DOM elements, or React elements via template literals or String() — that produces "[object Object]". Use console.log directly with plain objects, or JSON.stringify for simple data.
+- When the user asks for a UI page (login, dashboard, landing page, etc.), return the complete HTML with embedded CSS and JS in a single \`\`\`html code block so it can be previewed.
+- The user interface renders Markdown: headings, lists, tables, bold, links, and inline code are supported.
+
+Answer concisely with working examples. If asked about a project, design the architecture first, then provide the complete code.`;
+
 async function findChatForUser(userId: string, chatId: string): Promise<ChatRow | null> {
   const { data, error } = await supabase
     .from('chats')
@@ -150,6 +161,10 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
     role: m.role as 'user' | 'assistant',
     content: m.content,
   }));
+  const messages = [
+    { role: 'system' as const, content: CHAT_SYSTEM_PROMPT },
+    ...history,
+  ];
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -175,7 +190,7 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res) => {
 
   try {
     try {
-      for await (const delta of streamChatCompletion(history, model, abortController.signal)) {
+      for await (const delta of streamChatCompletion(messages, model, abortController.signal)) {
         if (clientGone) break;
         assistantText += delta;
         res.write(`data: ${JSON.stringify({ event: 'message', delta })}\n\n`);
