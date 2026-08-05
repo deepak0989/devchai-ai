@@ -23,7 +23,15 @@ interface MessageBubbleProps {
   };
 }
 
-function CodeBlock({ language, code }: { language: string; code: string }) {
+function CodeBlock({
+  language,
+  code,
+  highlighted,
+}: {
+  language: string;
+  code: string;
+  highlighted?: ReactNode;
+}) {
   const [copied, setCopied] = useState(false);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
@@ -113,7 +121,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
           }}
         >
           <Box component="code" className={`language-${language}`}>
-            {code}
+            {highlighted ?? code}
           </Box>
         </Box>
       )}
@@ -146,6 +154,15 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
       )}
     </Box>
   );
+}
+
+function extractText(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (node && typeof node === 'object' && 'props' in node) {
+    return extractText((node as { props: { children?: ReactNode } }).props.children);
+  }
+  return '';
 }
 
 const markdownStyles = {
@@ -331,9 +348,9 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                   },
                   code({ className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className ?? '');
-                    const code = String(children).replace(/\n$/, '');
+                    const code = extractText(children).replace(/\n$/, '');
                     if (match) {
-                      return <CodeBlock language={match[1]} code={code} />;
+                      return <CodeBlock language={match[1]} code={code} highlighted={children} />;
                     }
                     return (
                       <code className={className} {...props}>
