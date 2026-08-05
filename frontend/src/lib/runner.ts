@@ -50,7 +50,8 @@ function safeStringify(value: unknown, seen = new WeakSet<object>()): string {
     });
     return `{ ${parts.join(', ')} }`;
   } catch {
-    return String(value);
+    const name = value?.constructor?.name;
+    return name && name !== 'Object' ? `${name} (unserializable)` : String(value);
   } finally {
     seen.delete(obj);
   }
