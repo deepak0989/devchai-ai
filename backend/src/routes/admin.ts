@@ -2,7 +2,14 @@ import { NextFunction, Response, Router } from 'express';
 import { supabase } from '../db/supabase';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { config } from '../config';
-import { getFeatureSettings, saveFeatureSettings } from './settings';
+import {
+  getFeatureSettings,
+  saveFeatureSettings,
+  getMaintenanceSettings,
+  saveMaintenanceSettings,
+} from './settings';
+import { invalidateMaintenanceCache } from '../middleware/maintenance';
+import { UserLimits } from '../services/limits';
 
 const router = Router();
 
@@ -281,12 +288,17 @@ router.get('/overview', requireAuth, requireAdmin, async (_req: AuthRequest, res
   }
 });
 
-router.get('/users', requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
+router.get('/users', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
   try {
-    const [authUsers, rolesResult, chatsResult] = await Promise.all([
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+    const roleFilter = typeof req.query.role === 'string' ? req.query.role : 'all';
+    const statusFilter = typeof req.query.status === 'string' ? req.query.status : 'all';
+
+    const [authUsers, rolesResult, chatsResult, limitsResult] = await Promise.all([
       listAuthUsers(),
       supabase.from('roles').select('user_id, role'),
       supabase.from('chats').select('user_id'),
+      supabase.from('user_limits').select('user_id, max_chats, max_messages, note'),
     ]);
 
     const roleMap = new Map(
@@ -300,22 +312,154 @@ router.get('/users', requireAuth, requireAdmin, async (_req: AuthRequest, res) =
       const userId = (chat as { user_id: string }).user_id;
       chatCounts.set(userId, (chatCounts.get(userId) ?? 0) + 1);
     }
+    const limitsMap = new Map(
+      (limitsResult.data ?? []).map((row: { user_id: string; max_chats: number | null; max_messages: number | null; note: string | null }) => [
+        row.user_id,
+        { maxChats: row.max_chats ?? null, maxMessages: row.max_messages ?? null, note: row.note ?? null },
+      ])
+    );
 
-    const users = authUsers.map((user: any) => ({
+    let users = authUsers.map((user: any) => ({
       id: user.id,
       name: user.email?.split('@')[0] ?? 'User',
       email: user.email ?? 'unknown@mydevai.app',
       role: roleMap.get(user.id) ?? 'user',
       status: user.banned_until ? 'disabled' : 'active',
       chat_count: chatCounts.get(user.id) ?? 0,
+      limits: limitsMap.get(user.id) ?? { maxChats: null, maxMessages: null, note: null },
       created_at: user.created_at,
       last_seen: user.last_sign_in_at ?? user.created_at,
     }));
 
-    return res.json({ users, total: users.length });
+    const counts = {
+      all: users.length,
+      admin: users.filter((u: any) => u.role === 'admin').length,
+      active: users.filter((u: any) => u.status === 'active').length,
+      disabled: users.filter((u: any) => u.status === 'disabled').length,
+    };
+
+    if (search) {
+      users = users.filter(
+        (u: any) =>
+          u.email.toLowerCase().includes(search) || u.name.toLowerCase().includes(search)
+      );
+    }
+    if (roleFilter === 'admin' || roleFilter === 'user') {
+      users = users.filter((u: any) => u.role === roleFilter);
+    }
+    if (statusFilter === 'active' || statusFilter === 'disabled') {
+      users = users.filter((u: any) => u.status === statusFilter);
+    }
+
+    return res.json({ users, total: users.length, counts });
   } catch (error) {
     console.error('Admin users error:', error);
     return res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
+function csvEscape(value: unknown): string {
+  const text = String(value ?? '');
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+router.get('/users/export', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+    const roleFilter = typeof req.query.role === 'string' ? req.query.role : 'all';
+    const statusFilter = typeof req.query.status === 'string' ? req.query.status : 'all';
+
+    const [authUsers, rolesResult, chatsResult, limitsResult] = await Promise.all([
+      listAuthUsers(),
+      supabase.from('roles').select('user_id, role'),
+      supabase.from('chats').select('user_id'),
+      supabase.from('user_limits').select('user_id, max_chats, max_messages, note'),
+    ]);
+
+    const roleMap = new Map(
+      (rolesResult.data ?? []).map((row: { user_id: string; role: string }) => [
+        row.user_id,
+        row.role,
+      ])
+    );
+    const chatCounts = new Map<string, number>();
+    for (const chat of chatsResult.data ?? []) {
+      const userId = (chat as { user_id: string }).user_id;
+      chatCounts.set(userId, (chatCounts.get(userId) ?? 0) + 1);
+    }
+    const limitsMap = new Map(
+      (limitsResult.data ?? []).map(
+        (row: { user_id: string; max_chats: number | null; max_messages: number | null; note: string | null }) => [
+          row.user_id,
+          row as { max_chats: number | null; max_messages: number | null; note: string | null },
+        ]
+      )
+    );
+
+    let users = authUsers;
+    if (search) {
+      users = users.filter(
+        (u: any) =>
+          (u.email ?? '').toLowerCase().includes(search) ||
+          (u.email?.split('@')[0] ?? '').toLowerCase().includes(search)
+      );
+    }
+    if (roleFilter === 'admin' || roleFilter === 'user') {
+      users = users.filter((u: any) => (roleMap.get(u.id) ?? 'user') === roleFilter);
+    }
+    if (statusFilter === 'active' || statusFilter === 'disabled') {
+      users = users.filter((u: any) =>
+        statusFilter === 'active' ? !u.banned_until : Boolean(u.banned_until)
+      );
+    }
+
+    const header = [
+      'id',
+      'name',
+      'email',
+      'role',
+      'status',
+      'chat_count',
+      'max_chats',
+      'max_messages',
+      'limit_note',
+      'created_at',
+      'last_seen',
+    ];
+    const rows = users.map((user: any) => {
+      const limits = limitsMap.get(user.id) ?? null;
+      return [
+        user.id,
+        user.email?.split('@')[0] ?? 'User',
+        user.email ?? '',
+        roleMap.get(user.id) ?? 'user',
+        user.banned_until ? 'disabled' : 'active',
+        chatCounts.get(user.id) ?? 0,
+        limits?.max_chats ?? '',
+        limits?.max_messages ?? '',
+        limits?.note ?? '',
+        user.created_at ?? '',
+        user.last_sign_in_at ?? user.created_at ?? '',
+      ];
+    });
+
+    const csv = [header, ...rows]
+      .map((row) => row.map(csvEscape).join(','))
+      .join('\n');
+
+    const dateKey = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="devchat-users-${dateKey}.csv"`
+    );
+    return res.send(`\uFEFF${csv}`);
+  } catch (error) {
+    console.error('Admin users export error:', error);
+    return res.status(500).json({ error: 'Failed to export users' });
   }
 });
 
@@ -376,6 +520,10 @@ router.patch('/users/:id/role', requireAuth, requireAdmin, async (req: AuthReque
       return res.status(400).json({ error: 'Role must be "admin" or "user"' });
     }
 
+    if (userId === req.user!.id && role !== 'admin') {
+      return res.status(400).json({ error: 'You cannot remove your own admin role' });
+    }
+
     const { data: existing } = await supabase
       .from('roles')
       .select('user_id')
@@ -402,6 +550,10 @@ router.post('/users/:id/status', requireAuth, requireAdmin, async (req: AuthRequ
     const userId = req.params.id;
     const banned = req.body?.banned === true;
 
+    if (userId === req.user!.id && banned) {
+      return res.status(400).json({ error: 'You cannot disable your own account' });
+    }
+
     const attributes = banned
       ? { banned_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() }
       : { banned_until: null };
@@ -413,6 +565,76 @@ router.post('/users/:id/status', requireAuth, requireAdmin, async (req: AuthRequ
   } catch (error) {
     console.error('Admin status update error:', error);
     return res.status(500).json({ error: 'Failed to update user status' });
+  }
+});
+
+router.put('/users/:id/limits', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.params.id;
+    const body = req.body ?? {};
+
+    const rawChats = body.maxChats;
+    const rawMessages = body.maxMessages;
+    const rawNote = body.note;
+
+    if (
+      rawChats !== null &&
+      rawChats !== undefined &&
+      (typeof rawChats !== 'number' || !Number.isInteger(rawChats) || rawChats < 1)
+    ) {
+      return res.status(400).json({ error: 'maxChats must be a positive integer or null' });
+    }
+    if (
+      rawMessages !== null &&
+      rawMessages !== undefined &&
+      (typeof rawMessages !== 'number' || !Number.isInteger(rawMessages) || rawMessages < 1)
+    ) {
+      return res.status(400).json({ error: 'maxMessages must be a positive integer or null' });
+    }
+
+    const maxChats = rawChats ?? null;
+    const maxMessages = rawMessages ?? null;
+    const note =
+      typeof rawNote === 'string' && rawNote.trim().length > 0
+        ? rawNote.trim().slice(0, 300)
+        : null;
+
+    const { data: existing } = await supabase
+      .from('user_limits')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!existing) {
+      if (maxChats === null && maxMessages === null) {
+        return res.json({
+          ok: true,
+          limits: { maxChats: null, maxMessages: null, note: null },
+        });
+      }
+      const { error } = await supabase.from('user_limits').insert({
+        user_id: userId,
+        max_chats: maxChats,
+        max_messages: maxMessages,
+        note,
+      });
+      if (error) throw error;
+    } else if (maxChats === null && maxMessages === null && note === null) {
+      const { error } = await supabase.from('user_limits').delete().eq('user_id', userId);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('user_limits')
+        .update({ max_chats: maxChats, max_messages: maxMessages, note, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+      if (error) throw error;
+    }
+
+    const limits: UserLimits = { maxChats, maxMessages, note };
+    return res.json({ ok: true, limits });
+  } catch (error) {
+    console.error('Admin limits update error:', error);
+    return res.status(500).json({ error: 'Failed to update user limits' });
   }
 });
 
@@ -476,8 +698,11 @@ router.get('/billing', requireAuth, requireAdmin, async (_req: AuthRequest, res)
 
 router.get('/settings', requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
   try {
-    const settings = await getFeatureSettings();
-    return res.json(settings);
+    const [features, maintenance] = await Promise.all([
+      getFeatureSettings(),
+      getMaintenanceSettings(),
+    ]);
+    return res.json({ ...features, maintenance });
   } catch (error) {
     console.error('Admin settings error:', error);
     return res.status(500).json({ error: 'Failed to load settings' });
@@ -486,13 +711,25 @@ router.get('/settings', requireAuth, requireAdmin, async (_req: AuthRequest, res
 
 router.put('/settings', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
   try {
-    const voiceEnabled = req.body?.voiceEnabled;
-    if (typeof voiceEnabled !== 'boolean') {
-      return res.status(400).json({ error: 'voiceEnabled must be a boolean' });
+    const body = req.body ?? {};
+
+    if (typeof body.voiceEnabled === 'boolean') {
+      await saveFeatureSettings(body.voiceEnabled);
     }
 
-    await saveFeatureSettings(voiceEnabled);
-    return res.json({ voiceEnabled });
+    if (body.maintenance !== undefined) {
+      const enabled = body.maintenance?.enabled === true;
+      const message =
+        typeof body.maintenance?.message === 'string' ? body.maintenance.message : '';
+      await saveMaintenanceSettings(enabled, message);
+      invalidateMaintenanceCache();
+    }
+
+    const [features, maintenance] = await Promise.all([
+      getFeatureSettings(),
+      getMaintenanceSettings(),
+    ]);
+    return res.json({ ...features, maintenance });
   } catch (error) {
     console.error('Admin settings update error:', error);
     return res.status(500).json({ error: 'Failed to save settings' });
