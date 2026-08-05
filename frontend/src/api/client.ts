@@ -56,6 +56,45 @@ async function request<T>(
   return body as T;
 }
 
+export interface PublicSettings {
+  voiceEnabled: boolean;
+  maintenance: { enabled: boolean; message: string };
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  chat_count: number;
+  limits: { maxChats: number | null; maxMessages: number | null; note: string | null };
+  created_at: string;
+  last_seen: string;
+}
+
+async function requestBlob(
+  path: string,
+  options: RequestInit = {}
+): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const message =
+      (body as { error?: string }).error ?? `Request failed (${response.status})`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
 export const api = {
   register(email: string, password: string) {
     return request<{ user: User; session: { access_token: string } | null; message?: string }>(
@@ -107,20 +146,40 @@ export const api = {
     }>('/admin/overview');
   },
 
-  adminUsers() {
+  adminUsers(params?: { search?: string; role?: string; status?: string }) {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.role && params.role !== 'all') query.set('role', params.role);
+    if (params?.status && params.status !== 'all') query.set('status', params.status);
+    const qs = query.toString();
+
     return request<{
-      users: Array<{
-        id: string;
-        name: string;
-        email: string;
-        role: string;
-        status: string;
-        chat_count: number;
-        created_at: string;
-        last_seen: string;
-      }>;
+      users: AdminUserRow[];
       total: number;
-    }>('/admin/users');
+      counts: { all: number; admin: number; active: number; disabled: number };
+    }>(`/admin/users${qs ? `?${qs}` : ''}`);
+  },
+
+  adminExportUsers(params?: { search?: string; role?: string; status?: string }) {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.role && params.role !== 'all') query.set('role', params.role);
+    if (params?.status && params.status !== 'all') query.set('status', params.status);
+    const qs = query.toString();
+    return requestBlob(`/admin/users/export${qs ? `?${qs}` : ''}`);
+  },
+
+  adminSetLimits(
+    userId: string,
+    payload: { maxChats: number | null; maxMessages: number | null; note: string | null }
+  ) {
+    return request<{
+      ok: boolean;
+      limits: { maxChats: number | null; maxMessages: number | null; note: string | null };
+    }>(`/admin/users/${userId}/limits`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
   },
 
   adminUserChats(userId: string) {
@@ -152,17 +211,20 @@ export const api = {
   },
 
   getPublicSettings() {
-    return request<{ voiceEnabled: boolean }>('/settings');
+    return request<PublicSettings>('/settings');
   },
 
   adminGetSettings() {
-    return request<{ voiceEnabled: boolean }>('/admin/settings');
+    return request<PublicSettings>('/admin/settings');
   },
 
-  adminUpdateSettings(voiceEnabled: boolean) {
-    return request<{ voiceEnabled: boolean }>('/admin/settings', {
+  adminUpdateSettings(payload: {
+    voiceEnabled?: boolean;
+    maintenance?: { enabled: boolean; message: string };
+  }) {
+    return request<PublicSettings>('/admin/settings', {
       method: 'PUT',
-      body: JSON.stringify({ voiceEnabled }),
+      body: JSON.stringify(payload),
     });
   },
 
