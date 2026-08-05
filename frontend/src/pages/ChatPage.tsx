@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Drawer, useMediaQuery, useTheme } from '@mui/material';
+import { Alert, Box, Drawer, Snackbar, useMediaQuery, useTheme } from '@mui/material';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Chat } from '../types';
@@ -17,6 +17,7 @@ export default function ChatPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [model, setModel] = useState<string>('openai/gpt-4o-mini');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const loadChats = useCallback(async () => {
     try {
@@ -38,7 +39,9 @@ export default function ChatPage() {
       setActiveChatId(chat.id);
       if (isMobile) setDrawerOpen(false);
       return chat;
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to start a new chat.';
+      setNotice(message);
       return null;
     }
   }, [isMobile, model]);
@@ -124,6 +127,17 @@ export default function ChatPage() {
           onNewChat={handleNewChat}
         />
       </Box>
+
+      <Snackbar
+        open={notice !== null}
+        autoHideDuration={6000}
+        onClose={() => setNotice(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="warning" onClose={() => setNotice(null)} variant="filled" sx={{ borderRadius: 3 }}>
+          {notice}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
