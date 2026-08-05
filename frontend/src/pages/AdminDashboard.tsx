@@ -7,7 +7,7 @@ import {
   CartesianGrid,
   Cell,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as ChartTooltip,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -188,7 +188,7 @@ function TrendChartCard({ title, subtitle, data, color, height = 240 }: { title:
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
               <XAxis dataKey="label" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
               <YAxis axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} width={36} />
-              <Tooltip />
+              <ChartTooltip />
               <Area type="monotone" dataKey="value" stroke={color} strokeWidth={3} fill={`url(#fill-${color.replace('#', '')})`} />
             </AreaChart>
           </ResponsiveContainer>
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                     <XAxis dataKey="label" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
                     <YAxis axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} width={36} />
-                    <Tooltip />
+                    <ChartTooltip />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                       {overview.chatsTrend.map((entry, index) => (
                         <Cell key={`${entry.label}-${index}`} fill={index % 2 === 0 ? '#3b82f6' : '#93c5fd'} />
@@ -735,7 +735,7 @@ export default function AdminDashboard() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                       <XAxis dataKey="month" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
                       <YAxis axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} width={36} />
-                      <Tooltip />
+                      <ChartTooltip />
                       <Bar dataKey="messages" radius={[8, 8, 0, 0]}>
                         {billing.monthlyActivity.map((entry, index) => (
                           <Cell key={`${entry.month}-${index}`} fill={index % 2 === 0 ? '#10a37f' : '#6ee7b7'} />
@@ -951,8 +951,8 @@ export default function AdminDashboard() {
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
             {confirmUser?.action === 'ban'
-              ? `${confirmUser?.name} (${confirmUser?.email}) will lose access to their account immediately. They can be re-enabled at any time.`
-              : `${confirmUser?.name} (${confirmUser?.email}) will regain access to their account.`}
+              ? `${confirmUser?.user.name} (${confirmUser?.user.email}) will lose access to their account immediately. They can be re-enabled at any time.`
+              : `${confirmUser?.user.name} (${confirmUser?.user.email}) will regain access to their account.`}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
