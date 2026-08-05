@@ -4,6 +4,7 @@ import { config } from './config';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import chatRouter from './routes/chats';
+import settingsRouter from './routes/settings';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/chats', chatRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/settings', settingsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
