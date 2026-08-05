@@ -4,12 +4,14 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import CloseIcon from '@mui/icons-material/Close';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 import TypingLoader from './TypingLoader';
-import { canRunLanguage, languageLabel, runCode, RunResult } from '../lib/runner';
+import { canPreviewLanguage, canRunLanguage, languageLabel, runCode, RunResult } from '../lib/runner';
 
 interface MessageBubbleProps {
   message: {
@@ -25,6 +27,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
   const [copied, setCopied] = useState(false);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
+  const [preview, setPreview] = useState(false);
 
   async function handleCopy() {
     try {
@@ -76,27 +79,44 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
             {running ? <CircularProgress size={14} /> : <PlayArrowIcon fontSize="small" />}
           </IconButton>
         )}
+        {canPreviewLanguage(language) && (
+          <Tooltip title={preview ? 'Hide preview' : 'Preview'}>
+            <IconButton size="small" onClick={() => setPreview((v) => !v)} aria-label="Toggle preview" sx={{ color: '#0f766e' }}>
+              {preview ? <CloseIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
           <IconButton size="small" onClick={handleCopy} aria-label="Copy code" sx={{ color: '#475569' }}>
             {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
           </IconButton>
         </Tooltip>
       </Box>
-      <Box
-        component="pre"
-        sx={{
-          m: 0,
-          p: 1.5,
-          overflowX: 'auto',
-          fontSize: '0.85rem',
-          lineHeight: 1.6,
-          '& code': { fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace' },
-        }}
-      >
-        <Box component="code" className={`language-${language}`}>
-          {code}
+      {preview ? (
+        <Box
+          component="iframe"
+          title={`${language} preview`}
+          srcDoc={code}
+          sandbox=""
+          sx={{ display: 'block', width: '100%', height: 300, border: 'none', bgcolor: '#ffffff' }}
+        />
+      ) : (
+        <Box
+          component="pre"
+          sx={{
+            m: 0,
+            p: 1.5,
+            overflowX: 'auto',
+            fontSize: '0.85rem',
+            lineHeight: 1.6,
+            '& code': { fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace' },
+          }}
+        >
+          <Box component="code" className={`language-${language}`}>
+            {code}
+          </Box>
         </Box>
-      </Box>
+      )}
       {runResult && (
         <Box sx={{ px: 1.5, py: 1, borderTop: 1, borderColor: 'rgba(17,24,39,0.06)', bgcolor: '#0f172a' }}>
           <Typography variant="caption" fontWeight={700} sx={{ color: runResult.error ? '#f87171' : '#6ee7b7' }}>
