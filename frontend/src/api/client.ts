@@ -98,25 +98,69 @@ export const api = {
     return request<{
       summary: Array<{ label: string; value: string; change: string; color: string }>;
       modelBreakdown: Array<{ name: string; count: number; value: number; color: string }>;
-      recentUsers: Array<{ name: string; email: string; plan: string }>;
+      recentUsers: Array<{ name: string; email: string; joined: string | null }>;
       activity: string[];
-      systemHealth: Array<{ label: string; value: string; color: string }>;
-      revenueTrend: Array<{ label: string; value: number }>;
+      systemHealth: Array<{ label: string; status: 'ok' | 'error'; detail: string; color: string }>;
       usageTrend: Array<{ label: string; value: number }>;
+      chatsTrend: Array<{ label: string; value: number }>;
       lastUpdated: string;
     }>('/admin/overview');
   },
 
   adminUsers() {
-    return request<{ users: Array<{ id: string; name: string; email: string; role: string; status: string; created_at: string; last_seen: string }> }>('/admin/users');
+    return request<{
+      users: Array<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        status: string;
+        chat_count: number;
+        created_at: string;
+        last_seen: string;
+      }>;
+      total: number;
+    }>('/admin/users');
+  },
+
+  adminUserChats(userId: string) {
+    return request<{
+      user: { id: string; email: string | null };
+      chats: Array<{
+        id: string;
+        title: string;
+        model: string;
+        created_at: string;
+        updated_at: string;
+        messages: Message[];
+      }>;
+    }>(`/admin/users/${userId}/chats`);
+  },
+
+  adminSetRole(userId: string, role: 'admin' | 'user') {
+    return request<{ ok: boolean; role: string }>(`/admin/users/${userId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  adminSetStatus(userId: string, banned: boolean) {
+    return request<{ ok: boolean; banned: boolean }>(`/admin/users/${userId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ banned }),
+    });
   },
 
   adminBilling() {
     return request<{
-      totalRevenue: string;
-      arpu: string;
-      monthlyRevenue: Array<{ month: string; revenue: number; customers: number }>;
-      subscriptionBreakdown: Array<{ plan: string; users: number; revenue: number }>;
+      totalCredits: number | null;
+      totalSpend: number | null;
+      remaining: number | null;
+      totalUsers: number;
+      totalMessages: number;
+      monthlyActivity: Array<{ month: string; messages: number }>;
+      modelBreakdown: Array<{ name: string; count: number; value: number; color: string }>;
+      lastUpdated: string;
     }>('/admin/billing');
   },
 };
