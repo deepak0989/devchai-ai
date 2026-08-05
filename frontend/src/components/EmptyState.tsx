@@ -1,12 +1,16 @@
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip, Stack, Typography } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
 
 interface EmptyStateProps {
   suggestions: string[];
   onSuggestionClick: (suggestion: string) => void;
+  onCommandClick: (command: string) => void;
 }
 
-export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStateProps) {
+const COMMAND_HINTS = ['/review', '/debug', '/tests', '/refactor', '/explain'];
+
+export default function EmptyState({ suggestions, onSuggestionClick, onCommandClick }: EmptyStateProps) {
   return (
     <Box
       sx={{
@@ -22,18 +26,18 @@ export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStat
     >
       <Box
         sx={{
-          width: 72,
-          height: 72,
-          borderRadius: 4,
-          bgcolor: 'primary.main',
+          width: 76,
+          height: 76,
+          borderRadius: 4.5,
+          background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mb: 2,
-          boxShadow: '0 18px 38px rgba(16,163,127,0.2)',
+          mb: 2.5,
+          boxShadow: '0 18px 38px rgba(16,163,127,0.25)',
         }}
       >
-        <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 34 }} />
+        <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 36 }} />
       </Box>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 1, letterSpacing: '-0.04em' }}>
         How can I help you today?
@@ -81,6 +85,35 @@ export default function EmptyState({ suggestions, onSuggestionClick }: EmptyStat
           />
         ))}
       </Box>
+
+      <Stack
+        direction="row"
+        spacing={0.75}
+        alignItems="center"
+        justifyContent="center"
+        flexWrap="wrap"
+        sx={{ mt: 4 }}
+      >
+        <KeyboardCommandKeyIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
+        <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+          Try a dev command:
+        </Typography>
+        {COMMAND_HINTS.map((command) => (
+          <Chip
+            key={command}
+            label={command}
+            size="small"
+            onClick={() => onCommandClick(command)}
+            sx={{
+              height: 24,
+              fontWeight: 700,
+              color: 'primary.main',
+              bgcolor: 'rgba(16,163,127,0.08)',
+              '&:hover': { bgcolor: 'rgba(16,163,127,0.14)' },
+            }}
+          />
+        ))}
+      </Stack>
     </Box>
   );
 }
