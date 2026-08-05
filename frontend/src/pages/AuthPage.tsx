@@ -8,6 +8,11 @@ import {
   Typography,
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CodeIcon from '@mui/icons-material/Code';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
+import MicIcon from '@mui/icons-material/Mic';
+import BoltIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../context/AuthContext';
 
 function GoogleIcon() {
@@ -34,9 +39,31 @@ function GoogleIcon() {
 }
 
 const FEATURES = [
-  'GPT, Claude, Gemini & DeepSeek models',
-  'Streaming responses with a typing indicator',
-  'Chat history stored securely in Supabase',
+  {
+    icon: <BoltIcon sx={{ fontSize: 19, color: '#10a37f' }} />,
+    title: '4 top AI models',
+    description: 'GPT-4o mini, Claude 3.5 Sonnet, Gemini 2.0 Flash & DeepSeek',
+  },
+  {
+    icon: <CodeIcon sx={{ fontSize: 19, color: '#3b82f6' }} />,
+    title: 'Code-first markdown',
+    description: 'Syntax-highlighted code blocks with one-click copy',
+  },
+  {
+    icon: <TerminalIcon sx={{ fontSize: 19, color: '#8b5cf6' }} />,
+    title: 'Run code instantly',
+    description: 'Execute Python & JavaScript right in the chat',
+  },
+  {
+    icon: <KeyboardCommandKeyIcon sx={{ fontSize: 19, color: '#f59e0b' }} />,
+    title: 'Dev slash commands',
+    description: '/review, /debug, /tests, /refactor and more',
+  },
+  {
+    icon: <MicIcon sx={{ fontSize: 19, color: '#d97757' }} />,
+    title: 'Voice chat',
+    description: 'Talk to the AI and hear replies aloud',
+  },
 ];
 
 export default function AuthPage() {
@@ -69,63 +96,116 @@ export default function AuthPage() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        background:
-          'radial-gradient(1000px 600px at 80% -10%, rgba(16,163,127,0.15), transparent), #212121',
+        background: '#f5f5f4',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <Container maxWidth="md">
+      <Box
+        sx={{
+          position: 'absolute',
+          width: 520,
+          height: 520,
+          borderRadius: '50%',
+          top: -160,
+          left: -120,
+          background: 'radial-gradient(circle, rgba(16,163,127,0.16), transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          width: 560,
+          height: 560,
+          borderRadius: '50%',
+          bottom: -200,
+          right: -140,
+          background: 'radial-gradient(circle, rgba(59,130,246,0.14), transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <Container maxWidth="lg">
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.1fr 1fr' },
-            gap: 4,
+            gridTemplateColumns: { xs: '1fr', md: '1.15fr 1fr' },
+            gap: { xs: 3, md: 6 },
             alignItems: 'center',
+            position: 'relative',
           }}
         >
-          <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Box sx={{ display: { xs: 'none', md: 'block' }, pr: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
               <Box
                 sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 3,
-                  bgcolor: 'primary.main',
+                  width: 52,
+                  height: 52,
+                  borderRadius: 3.5,
+                  background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  boxShadow: '0 18px 38px rgba(16,163,127,0.25)',
                 }}
               >
-                <AutoAwesomeIcon sx={{ color: '#fff' }} />
+                <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 26 }} />
               </Box>
-              <Typography variant="h4" fontWeight={700}>
-                DevChat AI
-              </Typography>
+              <Box>
+                <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.04em' }}>
+                  DevChat AI
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.5 }}>
+                  YOUR AI DEVELOPMENT COMPANION
+                </Typography>
+              </Box>
             </Box>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 420 }}>
-              Your development companion. Ask questions, debug code, and get help from
-              the best AI models — all in one place.
+
+            <Typography variant="h2" fontWeight={800} sx={{ mb: 2, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
+              Code, debug and
+              <Box component="span" sx={{ color: 'primary.main' }}> ship faster.</Box>
             </Typography>
-            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 460, fontSize: '1.05rem' }}>
+              The best AI models, a developer-first experience, and voice — all in one
+              place. No setup, no cards. Just sign in and start building.
+            </Typography>
+
+            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, maxWidth: 500 }}>
               {FEATURES.map((feature) => (
-                <Box component="li" key={feature} sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                <Box
+                  component="li"
+                  key={feature.title}
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    mb: 1.75,
+                    p: 1.75,
+                    borderRadius: 3,
+                    border: 1,
+                    borderColor: 'rgba(17,24,39,0.06)',
+                    bgcolor: 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(6px)',
+                  }}
+                >
                   <Box
                     sx={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      bgcolor: 'rgba(16,163,127,0.2)',
-                      color: 'primary.main',
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2.5,
+                      bgcolor: 'rgba(17,24,39,0.04)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 12,
-                      fontWeight: 700,
                       flexShrink: 0,
                     }}
                   >
-                    ✓
+                    {feature.icon}
                   </Box>
-                  <Typography color="text.secondary">{feature}</Typography>
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>{feature.title}</Typography>
+                    <Typography variant="body2" color="text.secondary">{feature.description}</Typography>
+                  </Box>
                 </Box>
               ))}
             </Box>
@@ -133,20 +213,24 @@ export default function AuthPage() {
 
           <Box
             sx={{
-              p: { xs: 3, sm: 4 },
+              p: { xs: 3, sm: 4.5 },
+              borderRadius: 5,
+              bgcolor: '#ffffff',
+              boxShadow: '0 30px 70px rgba(15,23,42,0.10)',
               border: 1,
-              borderColor: 'divider',
-              borderRadius: 3,
-              bgcolor: 'background.paper',
+              borderColor: 'rgba(17,24,39,0.05)',
+              maxWidth: 440,
+              mx: 'auto',
+              width: '100%',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1, mb: 2 }}>
               <Box
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   borderRadius: 2,
-                  bgcolor: 'primary.main',
+                  background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -155,12 +239,10 @@ export default function AuthPage() {
               >
                 <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" fontWeight={700}>
-                DevChat AI
-              </Typography>
+              <Typography variant="h6" fontWeight={800}>DevChat AI</Typography>
             </Box>
 
-            <Typography variant="h5" fontWeight={700} sx={{ mt: 2, mb: 0.5 }}>
+            <Typography variant="h4" fontWeight={800} sx={{ mb: 0.75, letterSpacing: '-0.04em' }}>
               Welcome
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -168,7 +250,7 @@ export default function AuthPage() {
             </Typography>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
                 {error}
               </Alert>
             )}
@@ -186,7 +268,17 @@ export default function AuthPage() {
                   <GoogleIcon />
                 )
               }
-              sx={{ py: 1.5, borderRadius: 2 }}
+              sx={{
+                py: 1.6,
+                borderRadius: 3,
+                borderColor: 'rgba(17,24,39,0.12)',
+                fontWeight: 700,
+                textTransform: 'none',
+                '&:hover': {
+                  borderColor: 'rgba(17,24,39,0.3)',
+                  bgcolor: 'rgba(17,24,39,0.02)',
+                },
+              }}
             >
               {submitting ? 'Redirecting to Google...' : 'Continue with Google'}
             </Button>
@@ -194,7 +286,7 @@ export default function AuthPage() {
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ display: 'block', textAlign: 'center', mt: 2 }}
+              sx={{ display: 'block', textAlign: 'center', mt: 2.5 }}
             >
               A new account is created automatically on your first sign-in.
             </Typography>
