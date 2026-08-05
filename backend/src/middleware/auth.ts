@@ -24,6 +24,10 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
+  if (data.user.banned_until && new Date(data.user.banned_until).getTime() > Date.now()) {
+    return res.status(403).json({ error: 'Account disabled. Contact support.' });
+  }
+
   const { data: roleData } = await supabase
     .from('roles')
     .select('role')
