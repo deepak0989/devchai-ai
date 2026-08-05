@@ -190,6 +190,11 @@ export function canRunLanguage(language: string | null | undefined): boolean {
   return lang === 'python' || lang === 'javascript' || lang === 'js' || lang === 'typescript' || lang === 'ts';
 }
 
+export function canPreviewLanguage(language: string | null | undefined): boolean {
+  const lang = (language ?? '').toLowerCase();
+  return lang === 'html' || lang === 'htm';
+}
+
 export function runCode(language: string | null | undefined, code: string): Promise<RunResult> {
   const lang = (language ?? '').toLowerCase();
   if (lang === 'python' || lang === 'py') {
