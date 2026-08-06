@@ -5,6 +5,7 @@ const router = Router();
 
 export interface FeatureSettings {
   voiceEnabled: boolean;
+  defaultTheme: 'light' | 'dark';
 }
 
 export interface MaintenanceSettings {
@@ -113,14 +114,23 @@ export async function getFeatureSettings(): Promise<FeatureSettings> {
     .eq('key', 'features')
     .maybeSingle();
 
-  const value = (data?.value as { voice?: boolean } | undefined) ?? {};
-  return { voiceEnabled: value.voice !== false };
+  const value = (data?.value as { voice?: boolean; defaultTheme?: string } | undefined) ?? {};
+  return {
+    voiceEnabled: value.voice !== false,
+    defaultTheme: value.defaultTheme === 'dark' ? 'dark' : 'light',
+  };
 }
 
-export async function saveFeatureSettings(voiceEnabled: boolean): Promise<void> {
+export async function saveFeatureSettings(
+  voiceEnabled: boolean,
+  defaultTheme: 'light' | 'dark'
+): Promise<void> {
   await supabase
     .from('app_settings')
-    .upsert({ key: 'features', value: { voice: voiceEnabled } }, { onConflict: 'key' });
+    .upsert(
+      { key: 'features', value: { voice: voiceEnabled, defaultTheme } },
+      { onConflict: 'key' }
+    );
 }
 
 export async function getMaintenanceSettings(): Promise<MaintenanceSettings> {
@@ -167,6 +177,7 @@ router.get('/', async (_req, res) => {
   } catch {
     return res.json({
       voiceEnabled: true,
+      defaultTheme: 'light',
       maintenance: { enabled: false, message: '' },
       branding: DEFAULT_BRANDING,
     });
