@@ -1,6 +1,7 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
+import { useAppSettings } from '../lib/settings';
+import BrandLogo from './BrandLogo';
 
 interface EmptyStateProps {
   suggestions: string[];
@@ -11,6 +12,8 @@ interface EmptyStateProps {
 const COMMAND_HINTS = ['/review', '/debug', '/tests', '/refactor', '/explain'];
 
 export default function EmptyState({ suggestions, onSuggestionClick, onCommandClick }: EmptyStateProps) {
+  const { branding } = useAppSettings();
+
   return (
     <Box
       sx={{
@@ -24,26 +27,14 @@ export default function EmptyState({ suggestions, onSuggestionClick, onCommandCl
         px: 2,
       }}
     >
-      <Box
-        sx={{
-          width: 76,
-          height: 76,
-          borderRadius: 4.5,
-          background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mb: 2.5,
-          boxShadow: '0 18px 38px rgba(16,163,127,0.25)',
-        }}
-      >
-        <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 36 }} />
+      <Box sx={{ mb: 2.5, boxShadow: '0 18px 38px rgba(16,163,127,0.25)' }}>
+        <BrandLogo size={76} />
       </Box>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 1, letterSpacing: '-0.04em' }}>
         How can I help you today?
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Ask DevChat AI anything about coding, debugging, or technology.
+        Ask {branding.appName} anything about coding, debugging, or technology.
       </Typography>
       <Box
         sx={{
@@ -67,8 +58,8 @@ export default function EmptyState({ suggestions, onSuggestionClick, onCommandCl
               textAlign: 'left',
               color: 'text.primary',
               border: 1,
-              borderColor: 'rgba(17,24,39,0.08)',
-              bgcolor: '#ffffff',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
               borderRadius: 3,
               boxShadow: '0 1px 2px rgba(17,24,39,0.04)',
               '& .MuiChip-label': {
