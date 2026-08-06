@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
 import { ThemeProvider, Theme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { darkTheme, lightTheme } from '../theme';
+import { createAppTheme } from '../theme';
+import { useAppSettings } from '../lib/settings';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -24,6 +25,8 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  const { branding } = useAppSettings();
+
   const toggleMode = useCallback(() => {
     setMode((prev) => {
       const next: ThemeMode = prev === 'light' ? 'dark' : 'light';
@@ -37,9 +40,9 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<ThemeModeContextValue>(() => {
-    const theme = mode === 'dark' ? darkTheme : lightTheme;
+    const theme = createAppTheme(mode, branding.accent);
     return { mode, toggleMode, theme };
-  }, [mode, toggleMode]);
+  }, [mode, toggleMode, branding.accent]);
 
   return (
     <ThemeModeContext.Provider value={value}>
