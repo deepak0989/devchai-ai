@@ -1,10 +1,10 @@
 import { createTheme } from '@mui/material/styles';
 
 export const lightBackground =
-  'linear-gradient(180deg, #f5f5f4 0%, #e6f1ec 100%)';
+  'radial-gradient(1200px 600px at 85% -150px, rgba(139, 92, 246, 0.12) 0%, transparent 60%), radial-gradient(1000px 500px at 10% 110%, rgba(14, 165, 233, 0.10) 0%, transparent 60%), linear-gradient(160deg, #eef6ff 0%, #f0ebff 45%, #fdeef5 100%)';
 
 export const darkBackground =
-  'radial-gradient(1100px 480px at 50% -120px, rgba(0, 230, 118, 0.08) 0%, transparent 60%), linear-gradient(180deg, #0a0f0c 0%, #0d1410 100%)';
+  'radial-gradient(1000px 480px at 15% -120px, rgba(0, 230, 118, 0.09) 0%, transparent 60%), radial-gradient(900px 480px at 85% -120px, rgba(34, 211, 238, 0.08) 0%, transparent 60%), radial-gradient(1100px 500px at 50% 115%, rgba(139, 92, 246, 0.10) 0%, transparent 60%), linear-gradient(180deg, #0a0f0c 0%, #0d1410 100%)';
 
 const baseComponents = {
   MuiButton: {
@@ -67,6 +67,21 @@ export const lightTheme = createTheme({
   },
   components: {
     ...baseComponents,
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 12,
+          fontWeight: 600,
+          '&.MuiButton-contained': {
+            background: 'linear-gradient(135deg, #10a37f 0%, #3b82f6 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #0e9274 0%, #2f74e0 100%)',
+            },
+          },
+        },
+      },
+    },
     MuiCssBaseline: {
       styleOverrides: {
         html: {
