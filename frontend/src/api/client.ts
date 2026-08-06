@@ -66,6 +66,7 @@ export interface BrandingSettings {
 
 export interface PublicSettings {
   voiceEnabled: boolean;
+  defaultTheme: 'light' | 'dark';
   maintenance: { enabled: boolean; message: string };
   branding: BrandingSettings;
 }
@@ -229,6 +230,7 @@ export const api = {
 
   adminUpdateSettings(payload: {
     voiceEnabled?: boolean;
+    defaultTheme?: 'light' | 'dark';
     maintenance?: { enabled: boolean; message: string };
     branding?: { appName?: string; logo?: string; tagline?: string; logoUrl?: string; accent?: string };
   }) {
