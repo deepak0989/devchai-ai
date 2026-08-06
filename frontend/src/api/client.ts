@@ -60,6 +60,7 @@ export interface BrandingSettings {
   appName: string;
   logo: string;
   tagline: string;
+  logoUrl: string;
 }
 
 export interface PublicSettings {
@@ -228,7 +229,7 @@ export const api = {
   adminUpdateSettings(payload: {
     voiceEnabled?: boolean;
     maintenance?: { enabled: boolean; message: string };
-    branding?: { appName?: string; logo?: string; tagline?: string };
+    branding?: { appName?: string; logo?: string; tagline?: string; logoUrl?: string };
   }) {
     return request<PublicSettings>('/admin/settings', {
       method: 'PUT',
