@@ -14,6 +14,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import BoltIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../context/AuthContext';
 import { useAppSettings } from '../lib/settings';
+import { darkBackground, lightBackground } from '../theme';
 import BrandLogo from '../components/BrandLogo';
 
 function GoogleIcon() {
@@ -99,9 +100,8 @@ export default function AuthPage() {
         justifyContent: 'center',
         p: 2,
         background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'linear-gradient(180deg, #0a0f0c 0%, #0d130f 100%)'
-            : '#f5f5f4',
+          theme.palette.mode === 'dark' ? darkBackground : lightBackground,
+        backgroundAttachment: 'fixed',
         position: 'relative',
         overflow: 'hidden',
       }}
