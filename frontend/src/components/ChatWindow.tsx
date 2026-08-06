@@ -28,6 +28,7 @@ import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
 import EmptyState from './EmptyState';
+import BrandLogo from './BrandLogo';
 
 interface ChatWindowProps {
   chatId: string | null;
@@ -344,14 +345,80 @@ export default function ChatWindow({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
         background: (theme) =>
           theme.palette.mode === 'dark' ? darkBackground : lightBackground,
         backgroundAttachment: 'fixed',
       }}
     >
       <Box
+        aria-hidden="true"
+        sx={{
+          display: (theme) => (theme.palette.mode === 'dark' ? 'none' : 'block'),
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            width: 520,
+            height: 520,
+            borderRadius: '50%',
+            top: -180,
+            right: -140,
+            background: 'radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%)',
+            animation: 'blobFloat 22s ease-in-out infinite',
+            '@keyframes blobFloat': {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(-40px, 30px) scale(1.08)' },
+              '66%': { transform: 'translate(25px, -25px) scale(0.95)' },
+            },
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            width: 480,
+            height: 480,
+            borderRadius: '50%',
+            bottom: -160,
+            left: -140,
+            background: 'radial-gradient(circle, rgba(14,165,233,0.10), transparent 70%)',
+            animation: 'blobFloat 26s ease-in-out infinite reverse',
+            '@keyframes blobFloat': {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(-40px, 30px) scale(1.08)' },
+              '66%': { transform: 'translate(25px, -25px) scale(0.95)' },
+            },
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            width: 400,
+            height: 400,
+            borderRadius: '50%',
+            top: '35%',
+            left: '38%',
+            background: 'radial-gradient(circle, rgba(236,72,153,0.08), transparent 70%)',
+            animation: 'blobFloat 30s ease-in-out infinite',
+            '@keyframes blobFloat': {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(-40px, 30px) scale(1.08)' },
+              '66%': { transform: 'translate(25px, -25px) scale(0.95)' },
+            },
+          }}
+        />
+      </Box>
+
+      <Box
         component="header"
         sx={{
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
           gap: 1,
@@ -373,6 +440,7 @@ export default function ChatWindow({
             <MenuIcon />
           </IconButton>
         )}
+        <BrandLogo size={26} sx={{ flexShrink: 0 }} />
         <Typography variant="subtitle1" fontWeight={700} noWrap sx={{ flex: 1 }}>
           {chatId ? 'DevChat AI' : 'Start a new conversation'}
         </Typography>
@@ -397,6 +465,7 @@ export default function ChatWindow({
       <Box
         ref={scrollRef}
         sx={{
+          position: 'relative',
           flex: 1,
           overflowY: 'auto',
           px: { xs: 2, sm: 4, md: 6 },
@@ -430,7 +499,7 @@ export default function ChatWindow({
 
       <Box
         component="footer"
-        sx={{ px: { xs: 2, sm: 4, md: 6 }, pb: 3, pt: 1 }}
+        sx={{ position: 'relative', px: { xs: 2, sm: 4, md: 6 }, pb: 3, pt: 1 }}
       >
         <Box sx={{ maxWidth: 860, mx: 'auto' }}>
           <ChatInput
