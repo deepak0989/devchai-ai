@@ -17,6 +17,7 @@ export interface BrandingSettings {
   logo: string;
   tagline: string;
   logoUrl: string;
+  accent: string;
 }
 
 export const DEFAULT_BRANDING: BrandingSettings = {
@@ -24,6 +25,7 @@ export const DEFAULT_BRANDING: BrandingSettings = {
   logo: 'M',
   tagline: 'AI for developers',
   logoUrl: '',
+  accent: '#10a37f',
 };
 
 function cleanString(value: unknown, maxLength: number): string {
@@ -46,6 +48,14 @@ function cleanLogoUrl(value: string): string | null {
   return null;
 }
 
+function cleanAccent(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const cleaned = value.trim();
+  if (cleaned === '') return null;
+  if (/^#[0-9a-fA-F]{6}$/.test(cleaned)) return cleaned.toLowerCase();
+  return null;
+}
+
 export async function getBrandingSettings(): Promise<BrandingSettings> {
   const { data } = await supabase
     .from('app_settings')
@@ -54,7 +64,7 @@ export async function getBrandingSettings(): Promise<BrandingSettings> {
     .maybeSingle();
 
   const value = (data?.value as
-    | { appName?: string; logo?: string; tagline?: string; logoUrl?: string }
+    | { appName?: string; logo?: string; tagline?: string; logoUrl?: string; accent?: string }
     | undefined) ?? {};
 
   const rawLogoUrl = typeof value.logoUrl === 'string' ? value.logoUrl : '';
@@ -63,6 +73,7 @@ export async function getBrandingSettings(): Promise<BrandingSettings> {
     logo: cleanString(value.logo, 4) || DEFAULT_BRANDING.logo,
     tagline: cleanString(value.tagline, 90) || DEFAULT_BRANDING.tagline,
     logoUrl: cleanLogoUrl(rawLogoUrl) ?? '',
+    accent: cleanAccent(value.accent) ?? DEFAULT_BRANDING.accent,
   };
 }
 
@@ -71,6 +82,7 @@ export async function saveBrandingSettings(input: {
   logo?: string;
   tagline?: string;
   logoUrl?: string;
+  accent?: string;
 }): Promise<void> {
   const current = await getBrandingSettings();
   const appName = cleanString(input.appName ?? '', 40) || current.appName;
@@ -81,9 +93,17 @@ export async function saveBrandingSettings(input: {
     const cleaned = cleanLogoUrl(input.logoUrl);
     if (cleaned !== null) logoUrl = cleaned;
   }
+  let accent = current.accent;
+  if (input.accent !== undefined) {
+    const cleaned = cleanAccent(input.accent);
+    if (cleaned !== null) accent = cleaned;
+  }
   await supabase
     .from('app_settings')
-    .upsert({ key: 'branding', value: { appName, logo, tagline, logoUrl } }, { onConflict: 'key' });
+    .upsert(
+      { key: 'branding', value: { appName, logo, tagline, logoUrl, accent } },
+      { onConflict: 'key' }
+    );
 }
 
 export async function getFeatureSettings(): Promise<FeatureSettings> {
