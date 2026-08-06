@@ -56,9 +56,16 @@ async function request<T>(
   return body as T;
 }
 
+export interface BrandingSettings {
+  appName: string;
+  logo: string;
+  tagline: string;
+}
+
 export interface PublicSettings {
   voiceEnabled: boolean;
   maintenance: { enabled: boolean; message: string };
+  branding: BrandingSettings;
 }
 
 export interface AdminUserRow {
@@ -221,6 +228,7 @@ export const api = {
   adminUpdateSettings(payload: {
     voiceEnabled?: boolean;
     maintenance?: { enabled: boolean; message: string };
+    branding?: { appName?: string; logo?: string; tagline?: string };
   }) {
     return request<PublicSettings>('/admin/settings', {
       method: 'PUT',
