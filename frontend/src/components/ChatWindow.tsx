@@ -343,7 +343,10 @@ export default function ChatWindow({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: 'linear-gradient(180deg, #f5f5f4 0%, #f8f8f7 100%)',
+        background: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, #0a0f0c 0%, #0d130f 100%)'
+            : 'linear-gradient(180deg, #f5f5f4 0%, #f8f8f7 100%)',
       }}
     >
       <Box
@@ -356,7 +359,8 @@ export default function ChatWindow({
           py: 1.5,
           borderBottom: 1,
           borderColor: 'divider',
-          bgcolor: 'rgba(255,255,255,0.72)',
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark' ? 'rgba(13,18,15,0.72)' : 'rgba(255,255,255,0.72)',
           backdropFilter: 'blur(8px)',
         }}
       >
@@ -380,7 +384,7 @@ export default function ChatWindow({
               sx={{
                 borderRadius: 2,
                 color: voiceEnabled ? 'primary.main' : 'text.secondary',
-                bgcolor: voiceEnabled ? 'rgba(16,163,127,0.08)' : 'rgba(17,24,39,0.04)',
+                bgcolor: voiceEnabled ? 'rgba(16,163,127,0.08)' : 'action.hover',
               }}
             >
               {voiceEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
