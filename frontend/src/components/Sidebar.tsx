@@ -112,9 +112,13 @@ export default function Sidebar({
           sx={{
             py: 1.1,
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #10a37f 0%, #0f8d6c 100%)',
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
             boxShadow: 'none',
-            '&:hover': { background: 'linear-gradient(135deg, #0f8d6c 0%, #0d7d5f 100%)' },
+            '&:hover': {
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
+            },
           }}
         >
           New Chat
