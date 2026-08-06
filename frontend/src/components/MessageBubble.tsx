@@ -63,8 +63,8 @@ function CodeBlock({
         borderRadius: 2.5,
         overflow: 'hidden',
         border: 1,
-        borderColor: 'rgba(17,24,39,0.08)',
-        bgcolor: '#f8fafc',
+        borderColor: 'divider',
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#0d1512' : '#f8fafc'),
       }}
     >
       <Box
@@ -74,28 +74,28 @@ function CodeBlock({
           gap: 0.5,
           px: 1.5,
           py: 0.75,
-          bgcolor: '#f1f5f9',
+          bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#131c16' : '#f1f5f9'),
           borderBottom: 1,
-          borderColor: 'rgba(17,24,39,0.06)',
+          borderColor: 'divider',
         }}
       >
-        <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, color: '#475569', flex: 1 }}>
+        <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', flex: 1 }}>
           {languageLabel(language)}
         </Typography>
         {canRunLanguage(language) && (
-          <IconButton size="small" onClick={handleRun} disabled={running} aria-label="Run code" sx={{ color: '#0f766e' }}>
+          <IconButton size="small" onClick={handleRun} disabled={running} aria-label="Run code" sx={{ color: 'primary.main' }}>
             {running ? <CircularProgress size={14} /> : <PlayArrowIcon fontSize="small" />}
           </IconButton>
         )}
         {canPreviewLanguage(language) && (
           <Tooltip title={preview ? 'Hide preview' : 'Preview'}>
-            <IconButton size="small" onClick={() => setPreview((v) => !v)} aria-label="Toggle preview" sx={{ color: '#0f766e' }}>
+            <IconButton size="small" onClick={() => setPreview((v) => !v)} aria-label="Toggle preview" sx={{ color: 'primary.main' }}>
               {preview ? <CloseIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
         )}
         <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
-          <IconButton size="small" onClick={handleCopy} aria-label="Copy code" sx={{ color: '#475569' }}>
+          <IconButton size="small" onClick={handleCopy} aria-label="Copy code" sx={{ color: 'text.secondary' }}>
             {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
           </IconButton>
         </Tooltip>
@@ -129,7 +129,7 @@ function CodeBlock({
         <Box sx={{ px: 1.5, py: 1, borderTop: 1, borderColor: 'rgba(17,24,39,0.06)', bgcolor: '#0f172a' }}>
           <Typography variant="caption" fontWeight={700} sx={{ color: runResult.error ? '#f87171' : '#6ee7b7' }}>
             {runResult.error ? 'Error' : 'Output'}
-            <Box component="span" sx={{ ml: 1, color: '#475569', fontWeight: 500 }}>
+            <Box component="span" sx={{ ml: 1, color: 'text.secondary', fontWeight: 500 }}>
               runner {runResult.version}
             </Box>
           </Typography>
@@ -183,18 +183,19 @@ const markdownStyles = {
   },
   '& a': { color: 'primary.main', textDecoration: 'underline' },
   '& table': { borderCollapse: 'collapse', my: 1.5, width: '100%', fontSize: '0.85rem' },
-  '& th, & td': { border: '1px solid rgba(17,24,39,0.1)', px: 1.5, py: 0.75, textAlign: 'left' },
-  '& th': { bgcolor: 'rgba(17,24,39,0.04)', fontWeight: 700 },
-  '& tr:nth-of-type(even) td': { bgcolor: 'rgba(17,24,39,0.02)' },
-  '& hr': { border: 'none', borderTop: '1px solid rgba(17,24,39,0.1)', my: 2 },
+  '& th, & td': { border: '1px solid', borderColor: 'divider', px: 1.5, py: 0.75, textAlign: 'left' },
+  '& th': { bgcolor: 'action.hover', fontWeight: 700 },
+  '& tr:nth-of-type(even) td': { bgcolor: 'action.hover' },
+  '& hr': { border: 'none', borderTop: '1px solid', borderTopColor: 'divider', my: 2 },
   '& code:not(pre code)': {
     fontFamily: 'Consolas, monospace',
     fontSize: '0.83em',
-    bgcolor: 'rgba(17,24,39,0.06)',
+    bgcolor: (theme) =>
+      theme.palette.mode === 'dark' ? 'rgba(0,230,118,0.12)' : 'rgba(17,24,39,0.06)',
     px: 0.6,
     py: 0.15,
     borderRadius: 1,
-    color: '#be185d',
+    color: (theme) => (theme.palette.mode === 'dark' ? '#7dffb0' : '#be185d'),
   },
 } as const;
 
@@ -238,7 +239,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             boxShadow: '0 8px 18px rgba(16, 163, 127, 0.22)',
           }}
         >
-          <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 18 }} />
+          <AutoAwesomeIcon sx={{ color: 'primary.contrastText', fontSize: 18 }} />
         </Box>
         <Box sx={{ pt: 0.5 }}>
           <TypingLoader />
@@ -272,7 +273,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             boxShadow: '0 8px 18px rgba(16, 163, 127, 0.18)',
           }}
         >
-          <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 18 }} />
+          <AutoAwesomeIcon sx={{ color: 'primary.contrastText', fontSize: 18 }} />
         </Box>
       )}
 
@@ -303,7 +304,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             px: 2.2,
             py: 1.5,
             borderRadius: isUser ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
-            bgcolor: isUser ? '#1f2937' : '#ffffff',
+            bgcolor: isUser ? '#1f2937' : 'background.paper',
             color: isUser ? '#f9fafb' : 'text.primary',
             boxShadow: isUser ? 'none' : '0 1px 2px rgba(17,24,39,0.06)',
             border: isUser ? 'none' : 1,
