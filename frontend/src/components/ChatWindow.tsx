@@ -23,6 +23,7 @@ import {
 } from '../lib/speech';
 import { DEV_COMMANDS, applyDevCommand, findDevCommand, DevCommand } from '../lib/devCommands';
 import { getAppSettings, loadAppSettings } from '../lib/settings';
+import { darkBackground, lightBackground } from '../theme';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
@@ -344,9 +345,7 @@ export default function ChatWindow({
         flexDirection: 'column',
         height: '100%',
         background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'radial-gradient(900px 420px at 50% -80px, rgba(0,230,118,0.06) 0%, transparent 60%), linear-gradient(180deg, #0a0f0c 0%, #0d1410 100%)'
-            : 'linear-gradient(180deg, #f8faf9 0%, #eff5f2 100%)',
+          theme.palette.mode === 'dark' ? darkBackground : lightBackground,
         backgroundAttachment: 'fixed',
       }}
     >
