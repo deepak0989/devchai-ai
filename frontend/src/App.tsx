@@ -5,6 +5,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import GoogleCallback from './pages/GoogleCallback';
+import MiniAppPage from './pages/MiniAppPage';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import { api } from './api/client';
 import { useAppSettings } from './lib/settings';
@@ -88,6 +89,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/auth/callback" element={<GoogleCallback />} />
+          <Route path="/app/:id" element={<MiniAppPage />} />
           <Route
             path="/"
             element={
