@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Box, Chip, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
@@ -190,12 +191,12 @@ const markdownStyles = {
   '& code:not(pre code)': {
     fontFamily: 'Consolas, monospace',
     fontSize: '0.83em',
-    bgcolor: (theme) =>
+    bgcolor: (theme: Theme) =>
       theme.palette.mode === 'dark' ? 'rgba(0,230,118,0.12)' : 'rgba(17,24,39,0.06)',
     px: 0.6,
     py: 0.15,
     borderRadius: 1,
-    color: (theme) => (theme.palette.mode === 'dark' ? '#7dffb0' : '#be185d'),
+    color: (theme: Theme) => (theme.palette.mode === 'dark' ? '#7dffb0' : '#be185d'),
   },
 } as const;
 
