@@ -259,6 +259,11 @@ export default function MessageBubble({ message, streaming }: MessageBubbleProps
         py: 2,
         justifyContent: isUser ? 'flex-end' : 'flex-start',
         '&:hover .copy-message-btn': { opacity: 1 },
+        '@keyframes messageIn': {
+          from: { opacity: 0, transform: 'translateY(10px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        animation: 'messageIn 0.35s ease-out',
       }}
     >
       {!isUser && (
