@@ -7,6 +7,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -37,7 +39,17 @@ function CodeBlock({
   const [copied, setCopied] = useState(false);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(canPreviewLanguage(language));
+  const [previewKey, setPreviewKey] = useState(0);
+
+  const isApp = canPreviewLanguage(language);
+
+  function handleOpenInNewTab() {
+    const blob = new Blob([code], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 
   async function handleCopy() {
     try {
@@ -81,20 +93,49 @@ function CodeBlock({
           borderColor: 'divider',
         }}
       >
-        <Typography variant="caption" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', flex: 1 }}>
-          {languageLabel(language)}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>
+          {isApp && <AutoAwesomeIcon fontSize="small" sx={{ color: 'primary.main', flexShrink: 0 }} />}
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            sx={{ textTransform: 'uppercase', letterSpacing: 0.5, color: isApp ? 'primary.main' : 'text.secondary' }}
+            noWrap
+          >
+            {isApp ? 'Mini-app · Live' : languageLabel(language)}
+          </Typography>
+        </Box>
         {canRunLanguage(language) && (
           <IconButton size="small" onClick={handleRun} disabled={running} aria-label="Run code" sx={{ color: 'primary.main' }}>
             {running ? <CircularProgress size={14} /> : <PlayArrowIcon fontSize="small" />}
           </IconButton>
         )}
-        {canPreviewLanguage(language) && (
-          <Tooltip title={preview ? 'Hide preview' : 'Preview'}>
-            <IconButton size="small" onClick={() => setPreview((v) => !v)} aria-label="Toggle preview" sx={{ color: 'primary.main' }}>
-              {preview ? <CloseIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+        {isApp && (
+          <Tooltip title="Open in new tab">
+            <IconButton size="small" onClick={handleOpenInNewTab} aria-label="Open in new tab" sx={{ color: 'text.secondary' }}>
+              <OpenInNewIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+        )}
+        {canPreviewLanguage(language) && (
+          <>
+            {isApp && (
+              <Tooltip title="Restart app">
+                <IconButton
+                  size="small"
+                  onClick={() => setPreviewKey((k) => k + 1)}
+                  aria-label="Restart app"
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title={preview ? 'Hide preview' : 'Preview'}>
+              <IconButton size="small" onClick={() => setPreview((v) => !v)} aria-label="Toggle preview" sx={{ color: 'primary.main' }}>
+                {preview ? <CloseIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          </>
         )}
         <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
           <IconButton size="small" onClick={handleCopy} aria-label="Copy code" sx={{ color: 'text.secondary' }}>
@@ -105,10 +146,17 @@ function CodeBlock({
       {preview ? (
         <Box
           component="iframe"
+          key={previewKey}
           title={`${language} preview`}
           srcDoc={code}
-          sandbox=""
-          sx={{ display: 'block', width: '100%', height: 300, border: 'none', bgcolor: '#ffffff' }}
+          sandbox="allow-scripts"
+          sx={{
+            display: 'block',
+            width: '100%',
+            height: isApp ? 420 : 300,
+            border: 'none',
+            bgcolor: '#ffffff',
+          }}
         />
       ) : (
         <Box
