@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ThemeProvider } from '@mui/material/styles';
 import {
   Area,
   AreaChart,
@@ -62,8 +63,12 @@ import MicIcon from '@mui/icons-material/Mic';
 import TuneIcon from '@mui/icons-material/Tune';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import PaletteIcon from '@mui/icons-material/Palette';
 import { api, AdminUserRow } from '../api/client';
 import { Message } from '../types';
+import { useAppSettings } from '../lib/settings';
+import BrandLogo from '../components/BrandLogo';
+import { lightTheme } from '../theme';
 
 type TabKey = 'overview' | 'users' | 'billing' | 'settings';
 
@@ -212,6 +217,7 @@ function SkeletonCard({ height = 180 }: { height?: number }) {
 }
 
 export default function AdminDashboard() {
+  const { branding } = useAppSettings();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [userRows, setUserRows] = useState<AdminUserRow[]>([]);
@@ -239,6 +245,7 @@ export default function AdminDashboard() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [brandingDraft, setBrandingDraft] = useState({ appName: '', logo: '', tagline: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -270,6 +277,11 @@ export default function AdminDashboard() {
         setVoiceEnabled(settingsData.voiceEnabled);
         setMaintenanceEnabled(settingsData.maintenance.enabled);
         setMaintenanceMessage(settingsData.maintenance.message);
+        setBrandingDraft({
+          appName: settingsData.branding?.appName ?? '',
+          logo: settingsData.branding?.logo ?? '',
+          tagline: settingsData.branding?.tagline ?? '',
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load dashboard data.');
@@ -872,6 +884,32 @@ export default function AdminDashboard() {
     }
   }
 
+  async function saveBranding() {
+    setSettingsSaving(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    try {
+      const result = await api.adminUpdateSettings({
+        branding: {
+          appName: brandingDraft.appName,
+          logo: brandingDraft.logo,
+          tagline: brandingDraft.tagline,
+        },
+      });
+      setBrandingDraft({
+        appName: result.branding?.appName ?? brandingDraft.appName,
+        logo: result.branding?.logo ?? brandingDraft.logo,
+        tagline: result.branding?.tagline ?? brandingDraft.tagline,
+      });
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2000);
+    } catch (err) {
+      setSettingsError(err instanceof Error ? err.message : 'Failed to save branding.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
   const renderSettings = () => {
     if (loading) {
       return <SkeletonCard height={280} />;
@@ -888,6 +926,89 @@ export default function AdminDashboard() {
             <Typography variant="body2" color="text.secondary">
               Changes apply instantly to all users.
             </Typography>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: 2.5, bgcolor: 'rgba(139,92,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <PaletteIcon sx={{ color: '#6d28d9' }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle1" fontWeight={700}>Branding</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Customize the app name, logo and tagline shown across the app and login page.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                <Box
+                  sx={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 2.5,
+                    background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    color: '#fff',
+                    fontSize: 21,
+                  }}
+                >
+                  {brandingDraft.logo || '?'}
+                </Box>
+                {settingsSaving && <CircularProgress size={18} />}
+                {settingsSaved && (
+                  <Chip label="Saved" size="small" sx={{ bgcolor: 'rgba(16,163,127,0.12)', color: '#0f766e', fontWeight: 700 }} />
+                )}
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5 }}>
+              <TextField
+                size="small"
+                label="App name"
+                value={brandingDraft.appName}
+                onChange={(event) => setBrandingDraft((prev) => ({ ...prev, appName: event.target.value }))}
+                placeholder="MyDevAI"
+                inputProps={{ maxLength: 40 }}
+                disabled={settingsSaving}
+              />
+              <TextField
+                size="small"
+                label="Logo (emoji or 1-4 characters)"
+                value={brandingDraft.logo}
+                onChange={(event) => setBrandingDraft((prev) => ({ ...prev, logo: event.target.value }))}
+                placeholder="M"
+                inputProps={{ maxLength: 4 }}
+                disabled={settingsSaving}
+              />
+              <TextField
+                size="small"
+                label="Tagline"
+                value={brandingDraft.tagline}
+                onChange={(event) => setBrandingDraft((prev) => ({ ...prev, tagline: event.target.value }))}
+                placeholder="AI for developers"
+                inputProps={{ maxLength: 90 }}
+                disabled={settingsSaving}
+                sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+              <Button
+                variant="contained"
+                size="small"
+                disabled={settingsSaving || brandingDraft.appName.trim() === ''}
+                onClick={saveBranding}
+                sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 3 }}
+              >
+                Save branding
+              </Button>
+            </Box>
           </CardContent>
         </Card>
 
@@ -1082,11 +1203,12 @@ export default function AdminDashboard() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', background: '#f5f5f4' }}>
+    <ThemeProvider theme={lightTheme}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', background: '#f5f5f4' }}>
       <Box sx={{ width: 260, background: 'linear-gradient(180deg, #111827 0%, #0f172a 100%)', color: '#f8fafc', p: 2.5, display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1 }}>
-          <Box sx={{ width: 30, height: 30, borderRadius: 2, bgcolor: '#10a37f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>M</Box>
-          <Typography variant="h6" fontWeight={800}>MyDevAI</Typography>
+          <BrandLogo size={30} />
+          <Typography variant="h6" fontWeight={800}>{branding.appName}</Typography>
         </Box>
 
         <Stack spacing={1} sx={{ mt: 2 }}>
@@ -1123,7 +1245,7 @@ export default function AdminDashboard() {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
               <Box>
                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.5 }}>ADMIN OVERVIEW</Typography>
-                <Typography variant={isSmall ? 'h4' : 'h3'} fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>MyDevAI Dashboard</Typography>
+                <Typography variant={isSmall ? 'h4' : 'h3'} fontWeight={800} sx={{ letterSpacing: '-0.06em' }}>{branding.appName} Dashboard</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -1337,6 +1459,7 @@ export default function AdminDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+      </Box>
+    </ThemeProvider>
   );
 }
