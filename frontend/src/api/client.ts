@@ -83,6 +83,18 @@ export interface AdminUserRow {
   last_seen: string;
 }
 
+export interface MiniAppRow {
+  id: string;
+  name: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface MiniAppDetail extends MiniAppRow {
+  html: string;
+}
+
 async function requestBlob(
   path: string,
   options: RequestInit = {}
@@ -218,6 +230,24 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ banned }),
     });
+  },
+
+  createMiniApp(payload: { name: string; html: string; isPublic?: boolean }) {
+    return request<{ app: MiniAppRow }>('/mini-apps', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateMiniApp(id: string, payload: { name?: string; html?: string; isPublic?: boolean }) {
+    return request<{ app: MiniAppRow }>(`/mini-apps/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getPublicMiniApp(id: string) {
+    return request<{ app: MiniAppDetail }>(`/public/mini-apps/${id}`);
   },
 
   getPublicSettings() {
