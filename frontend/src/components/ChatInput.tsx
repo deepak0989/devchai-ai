@@ -202,10 +202,18 @@ export default function ChatInput({
             sx={{
               flexShrink: 0,
               mb: 0.25,
-              bgcolor: 'primary.main',
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #00e676 0%, #00c853 100%)'
+                  : 'linear-gradient(135deg, #10a37f 0%, #3b82f6 100%)',
               color: 'primary.contrastText',
               borderRadius: 2,
-              '&:hover': { bgcolor: 'primary.dark' },
+              '&:hover': {
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #00c853 0%, #00b24a 100%)'
+                    : 'linear-gradient(135deg, #0e9274 0%, #2f74e0 100%)',
+              },
               '&.Mui-disabled': {
                 bgcolor: 'rgba(17,24,39,0.08)',
                 color: 'text.disabled',
