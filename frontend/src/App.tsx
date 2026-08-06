@@ -63,7 +63,24 @@ export default function App() {
 
   useEffect(() => {
     document.title = branding.appName;
-  }, [branding.appName]);
+
+    let icon: string;
+    if (branding.logoUrl) {
+      icon = branding.logoUrl;
+    } else {
+      const char = (branding.logo || 'M').slice(0, 1);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#10a37f"/><text x="32" y="42" font-size="34" font-weight="800" text-anchor="middle" fill="#ffffff" font-family="Arial">${char}</text></svg>`;
+      icon = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+    }
+
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = icon;
+  }, [branding.appName, branding.logo, branding.logoUrl]);
 
   return (
     <BrowserRouter>
