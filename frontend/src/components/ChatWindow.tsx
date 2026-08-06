@@ -490,6 +490,7 @@ export default function ChatWindow({
               <MessageBubble
                 key={message.id}
                 message={message}
+                chatId={chatId}
                 streaming={
                   streaming && index === messages.length - 1 && message.role === 'assistant'
                 }
