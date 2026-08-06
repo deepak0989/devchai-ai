@@ -1026,6 +1026,16 @@ export default function AdminDashboard() {
               />
               <TextField
                 size="small"
+                label="Tagline"
+                value={brandingDraft.tagline}
+                onChange={(event) => setBrandingDraft((prev) => ({ ...prev, tagline: event.target.value }))}
+                placeholder="AI for developers"
+                inputProps={{ maxLength: 90 }}
+                disabled={settingsSaving}
+                sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
+              />
+              <TextField
+                size="small"
                 label="Logo image URL (optional)"
                 value={brandingDraft.logoUrl}
                 onChange={(event) => setBrandingDraft((prev) => ({ ...prev, logoUrl: event.target.value }))}
