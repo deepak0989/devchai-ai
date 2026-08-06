@@ -1,5 +1,6 @@
 import { Box, SxProps, Theme } from '@mui/material';
 import { getAppSettings } from '../lib/settings';
+import { darkenHex, isValidHex } from '../lib/color';
 
 interface BrandLogoProps {
   size?: number;
@@ -8,7 +9,8 @@ interface BrandLogoProps {
 
 export default function BrandLogo({ size = 30, sx }: BrandLogoProps) {
   const { branding } = getAppSettings();
-  const { logo, appName, logoUrl } = branding;
+  const { logo, appName, logoUrl, accent } = branding;
+  const accentMain = isValidHex(accent) ? accent.trim() : '#10a37f';
 
   return (
     <Box
@@ -25,7 +27,7 @@ export default function BrandLogo({ size = 30, sx }: BrandLogoProps) {
         overflow: 'hidden',
         background: logoUrl
           ? 'transparent'
-          : 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
+          : `linear-gradient(135deg, ${accentMain} 0%, ${darkenHex(accentMain)} 100%)`,
         flexShrink: 0,
         ...sx,
       }}
