@@ -245,7 +245,7 @@ export default function AdminDashboard() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
-  const [brandingDraft, setBrandingDraft] = useState({ appName: '', logo: '', tagline: '' });
+  const [brandingDraft, setBrandingDraft] = useState({ appName: '', logo: '', tagline: '', logoUrl: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -281,6 +281,7 @@ export default function AdminDashboard() {
           appName: settingsData.branding?.appName ?? '',
           logo: settingsData.branding?.logo ?? '',
           tagline: settingsData.branding?.tagline ?? '',
+          logoUrl: settingsData.branding?.logoUrl ?? '',
         });
       }
     } catch (err) {
@@ -894,12 +895,14 @@ export default function AdminDashboard() {
           appName: brandingDraft.appName,
           logo: brandingDraft.logo,
           tagline: brandingDraft.tagline,
+          logoUrl: brandingDraft.logoUrl,
         },
       });
       setBrandingDraft({
         appName: result.branding?.appName ?? brandingDraft.appName,
         logo: result.branding?.logo ?? brandingDraft.logo,
         tagline: result.branding?.tagline ?? brandingDraft.tagline,
+        logoUrl: result.branding?.logoUrl ?? brandingDraft.logoUrl,
       });
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 2000);
@@ -944,22 +947,32 @@ export default function AdminDashboard() {
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-                <Box
-                  sx={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 2.5,
-                    background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    color: '#fff',
-                    fontSize: 21,
-                  }}
-                >
-                  {brandingDraft.logo || '?'}
-                </Box>
+                {brandingDraft.logoUrl ? (
+                  <Box
+                    component="img"
+                    src={brandingDraft.logoUrl}
+                    alt="Logo preview"
+                    draggable={false}
+                    sx={{ width: 42, height: 42, objectFit: 'contain', borderRadius: 2 }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 2.5,
+                      background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      color: '#fff',
+                      fontSize: 21,
+                    }}
+                  >
+                    {brandingDraft.logo || '?'}
+                  </Box>
+                )}
                 {settingsSaving && <CircularProgress size={18} />}
                 {settingsSaved && (
                   <Chip label="Saved" size="small" sx={{ bgcolor: 'rgba(16,163,127,0.12)', color: '#0f766e', fontWeight: 700 }} />
@@ -985,6 +998,16 @@ export default function AdminDashboard() {
                 placeholder="M"
                 inputProps={{ maxLength: 4 }}
                 disabled={settingsSaving}
+              />
+              <TextField
+                size="small"
+                label="Logo image URL (optional)"
+                value={brandingDraft.logoUrl}
+                onChange={(event) => setBrandingDraft((prev) => ({ ...prev, logoUrl: event.target.value }))}
+                placeholder="https://example.com/logo.png"
+                inputProps={{ maxLength: 300 }}
+                disabled={settingsSaving}
+                sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
               />
               <TextField
                 size="small"
