@@ -296,17 +296,24 @@ router.get('/users', requireAuth, requireAdmin, async (req: AuthRequest, res) =>
     const roleFilter = typeof req.query.role === 'string' ? req.query.role : 'all';
     const statusFilter = typeof req.query.status === 'string' ? req.query.status : 'all';
 
-    const [authUsers, rolesResult, chatsResult, limitsResult] = await Promise.all([
+    const [authUsers, rolesResult, chatsResult, limitsResult, bannedResult] = await Promise.all([
       listAuthUsers(),
       supabase.from('roles').select('user_id, role'),
       supabase.from('chats').select('user_id'),
       supabase.from('user_limits').select('user_id, max_chats, max_messages, note'),
+      supabase.from('banned_users').select('user_id, banned_until'),
     ]);
 
     const roleMap = new Map(
       (rolesResult.data ?? []).map((row: { user_id: string; role: string }) => [
         row.user_id,
         row.role,
+      ])
+    );
+    const bannedMap = new Map(
+      (bannedResult.data ?? []).map((row: { user_id: string; banned_until: string }) => [
+        row.user_id,
+        row.banned_until,
       ])
     );
     const chatCounts = new Map<string, number>();
@@ -326,7 +333,7 @@ router.get('/users', requireAuth, requireAdmin, async (req: AuthRequest, res) =>
       name: user.email?.split('@')[0] ?? 'User',
       email: user.email ?? 'unknown@mydevai.app',
       role: roleMap.get(user.id) ?? 'user',
-      status: user.banned_until ? 'disabled' : 'active',
+      status: user.banned_until || bannedMap.get(user.id) ? 'disabled' : 'active',
       chat_count: chatCounts.get(user.id) ?? 0,
       limits: limitsMap.get(user.id) ?? { maxChats: null, maxMessages: null, note: null },
       created_at: user.created_at,
@@ -374,17 +381,24 @@ router.get('/users/export', requireAuth, requireAdmin, async (req: AuthRequest, 
     const roleFilter = typeof req.query.role === 'string' ? req.query.role : 'all';
     const statusFilter = typeof req.query.status === 'string' ? req.query.status : 'all';
 
-    const [authUsers, rolesResult, chatsResult, limitsResult] = await Promise.all([
+    const [authUsers, rolesResult, chatsResult, limitsResult, bannedResult] = await Promise.all([
       listAuthUsers(),
       supabase.from('roles').select('user_id, role'),
       supabase.from('chats').select('user_id'),
       supabase.from('user_limits').select('user_id, max_chats, max_messages, note'),
+      supabase.from('banned_users').select('user_id, banned_until'),
     ]);
 
     const roleMap = new Map(
       (rolesResult.data ?? []).map((row: { user_id: string; role: string }) => [
         row.user_id,
         row.role,
+      ])
+    );
+    const bannedMap = new Map(
+      (bannedResult.data ?? []).map((row: { user_id: string; banned_until: string }) => [
+        row.user_id,
+        row.banned_until,
       ])
     );
     const chatCounts = new Map<string, number>();
@@ -414,7 +428,9 @@ router.get('/users/export', requireAuth, requireAdmin, async (req: AuthRequest, 
     }
     if (statusFilter === 'active' || statusFilter === 'disabled') {
       users = users.filter((u: any) =>
-        statusFilter === 'active' ? !u.banned_until : Boolean(u.banned_until)
+        statusFilter === 'active'
+          ? !u.banned_until && !bannedMap.get(u.id)
+          : Boolean(u.banned_until) || Boolean(bannedMap.get(u.id))
       );
     }
 
@@ -438,7 +454,7 @@ router.get('/users/export', requireAuth, requireAdmin, async (req: AuthRequest, 
         user.email?.split('@')[0] ?? 'User',
         user.email ?? '',
         roleMap.get(user.id) ?? 'user',
-        user.banned_until ? 'disabled' : 'active',
+        user.banned_until || bannedMap.get(user.id) ? 'disabled' : 'active',
         chatCounts.get(user.id) ?? 0,
         limits?.max_chats ?? '',
         limits?.max_messages ?? '',
@@ -556,12 +572,28 @@ router.post('/users/:id/status', requireAuth, requireAdmin, async (req: AuthRequ
       return res.status(400).json({ error: 'You cannot disable your own account' });
     }
 
-    const attributes = banned
-      ? { banned_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() }
-      : { banned_until: null };
+    const bannedUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { error } = await (supabase.auth as any).admin.updateUserById(userId, attributes);
-    if (error) throw error;
+    if (banned) {
+      const { error } = await supabase
+        .from('banned_users')
+        .upsert({ user_id: userId, banned_until: bannedUntil }, { onConflict: 'user_id' });
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('banned_users').delete().eq('user_id', userId);
+      if (error) throw error;
+    }
+
+    try {
+      const { error: goTrueError } = await (supabase.auth as any).admin.updateUserById(userId, {
+        banned_until: banned ? bannedUntil : null,
+      });
+      if (goTrueError) {
+        console.error('GoTrue ban sync warning:', goTrueError.message);
+      }
+    } catch (goTrueErr) {
+      console.error('GoTrue ban sync warning:', goTrueErr);
+    }
 
     return res.json({ ok: true, banned });
   } catch (error) {
@@ -716,8 +748,14 @@ router.put('/settings', requireAuth, requireAdmin, async (req: AuthRequest, res)
   try {
     const body = req.body ?? {};
 
-    if (typeof body.voiceEnabled === 'boolean') {
-      await saveFeatureSettings(body.voiceEnabled);
+    if (typeof body.voiceEnabled === 'boolean' || body.defaultTheme !== undefined) {
+      const currentFeatures = await getFeatureSettings();
+      await saveFeatureSettings(
+        typeof body.voiceEnabled === 'boolean' ? body.voiceEnabled : currentFeatures.voiceEnabled,
+        body.defaultTheme === 'dark' || body.defaultTheme === 'light'
+          ? body.defaultTheme
+          : currentFeatures.defaultTheme
+      );
     }
 
     if (body.maintenance !== undefined) {
