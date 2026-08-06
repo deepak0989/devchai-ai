@@ -6,6 +6,7 @@ import authRouter from './routes/auth';
 import chatRouter from './routes/chats';
 import settingsRouter from './routes/settings';
 import agentRouter from './routes/agent';
+import miniAppsRouter, { publicRouter as publicMiniAppsRouter } from './routes/miniapps';
 import { maintenanceGuard } from './middleware/maintenance';
 
 const app = express();
@@ -23,6 +24,8 @@ app.use('/api/chats', maintenanceGuard, chatRouter);
 app.use('/api/agent', maintenanceGuard, agentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/mini-apps', maintenanceGuard, miniAppsRouter);
+app.use('/api/public/mini-apps', publicMiniAppsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
