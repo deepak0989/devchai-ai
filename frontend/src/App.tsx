@@ -7,6 +7,7 @@ import ChatPage from './pages/ChatPage';
 import GoogleCallback from './pages/GoogleCallback';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import { api } from './api/client';
+import { useAppSettings } from './lib/settings';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, initializing } = useAuth();
@@ -58,6 +59,12 @@ function MaintenanceGate({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const { branding } = useAppSettings();
+
+  useEffect(() => {
+    document.title = branding.appName;
+  }, [branding.appName]);
+
   return (
     <BrowserRouter>
       <AuthProvider>
