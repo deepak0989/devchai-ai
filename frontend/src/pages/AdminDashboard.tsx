@@ -68,6 +68,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { api, AdminUserRow } from '../api/client';
 import { Message } from '../types';
 import { useAppSettings } from '../lib/settings';
+import { darkenHex, isValidHex } from '../lib/color';
 import BrandLogo from '../components/BrandLogo';
 import { lightTheme, lightBackground } from '../theme';
 
@@ -246,7 +247,7 @@ export default function AdminDashboard() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
-  const [brandingDraft, setBrandingDraft] = useState({ appName: '', logo: '', tagline: '', logoUrl: '' });
+  const [brandingDraft, setBrandingDraft] = useState({ appName: '', logo: '', tagline: '', logoUrl: '', accent: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -259,6 +260,8 @@ export default function AdminDashboard() {
 
   const isMobile = useMediaQuery('(max-width: 900px)');
   const isSmall = useMediaQuery('(max-width: 600px)');
+
+  const previewAccent = isValidHex(brandingDraft.accent) ? brandingDraft.accent.trim() : '#10a37f';
 
   async function loadData() {
     setLoading(true);
@@ -283,6 +286,7 @@ export default function AdminDashboard() {
           logo: settingsData.branding?.logo ?? '',
           tagline: settingsData.branding?.tagline ?? '',
           logoUrl: settingsData.branding?.logoUrl ?? '',
+          accent: settingsData.branding?.accent ?? '',
         });
       }
     } catch (err) {
@@ -897,6 +901,7 @@ export default function AdminDashboard() {
           logo: brandingDraft.logo,
           tagline: brandingDraft.tagline,
           logoUrl: brandingDraft.logoUrl,
+          accent: brandingDraft.accent,
         },
       });
       setBrandingDraft({
@@ -904,6 +909,7 @@ export default function AdminDashboard() {
         logo: result.branding?.logo ?? brandingDraft.logo,
         tagline: result.branding?.tagline ?? brandingDraft.tagline,
         logoUrl: result.branding?.logoUrl ?? brandingDraft.logoUrl,
+        accent: result.branding?.accent ?? brandingDraft.accent,
       });
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 2000);
@@ -986,7 +992,7 @@ export default function AdminDashboard() {
                       width: 42,
                       height: 42,
                       borderRadius: 2.5,
-                      background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
+                      background: `linear-gradient(135deg, ${previewAccent} 0%, ${darkenHex(previewAccent)} 100%)`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1044,6 +1050,48 @@ export default function AdminDashboard() {
                 disabled={settingsSaving}
                 sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
               />
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  gridColumn: { xs: 'auto', md: '1 / -1' },
+                }}
+              >
+                <Box
+                  component="label"
+                  title="Pick accent color"
+                  sx={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 2,
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    border: '1px solid rgba(17,24,39,0.15)',
+                    background: `linear-gradient(135deg, ${previewAccent} 0%, ${darkenHex(previewAccent)} 100%)`,
+                    boxShadow: 'inset 0 0 0 4px #fff, 0 1px 4px rgba(15,23,42,0.12)',
+                  }}
+                >
+                  <input
+                    id="accent-color-picker"
+                    type="color"
+                    value={previewAccent}
+                    onChange={(event) => setBrandingDraft((prev) => ({ ...prev, accent: event.target.value }))}
+                    disabled={settingsSaving}
+                    style={{ opacity: 0, width: '100%', height: '100%', cursor: 'pointer', border: 'none', padding: 0 }}
+                  />
+                </Box>
+                <TextField
+                  size="small"
+                  label="Accent color (hex) — buttons, highlights, logo tile"
+                  value={brandingDraft.accent}
+                  onChange={(event) => setBrandingDraft((prev) => ({ ...prev, accent: event.target.value }))}
+                  placeholder="#10a37f"
+                  inputProps={{ maxLength: 7 }}
+                  disabled={settingsSaving}
+                  sx={{ flex: 1 }}
+                />
+              </Box>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1.5, flexWrap: 'wrap' }}>
