@@ -24,7 +24,16 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  if (data.user.banned_until && new Date(data.user.banned_until).getTime() > Date.now()) {
+  const { data: bannedRow } = await supabase
+    .from('banned_users')
+    .select('banned_until')
+    .eq('user_id', data.user.id)
+    .maybeSingle();
+
+  const bannedUntil =
+    (data.user.banned_until as string | null | undefined) ?? bannedRow?.banned_until ?? null;
+
+  if (bannedUntil && new Date(bannedUntil).getTime() > Date.now()) {
     return res.status(403).json({ error: 'Account disabled. Contact support.' });
   }
 
