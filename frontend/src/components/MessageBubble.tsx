@@ -44,16 +44,19 @@ interface MessageBubbleProps {
     command?: string;
   };
   streaming?: boolean;
+  chatId?: string | null;
 }
 
 function CodeBlock({
   language,
   code,
   highlighted,
+  chatId,
 }: {
   language: string;
   code: string;
   highlighted?: ReactNode;
+  chatId?: string | null;
 }) {
   const [copied, setCopied] = useState(false);
   const [running, setRunning] = useState(false);
@@ -96,7 +99,7 @@ function CodeBlock({
       if (appId) {
         await api.updateMiniApp(appId, { name: shareName, html: code });
       } else {
-        const { app } = await api.createMiniApp({ name: shareName, html: code, isPublic: true });
+        const { app } = await api.createMiniApp({ name: shareName, html: code, isPublic: true, chatId: chatId ?? undefined });
         appId = app.id;
         setShareAppId(appId);
       }
@@ -465,7 +468,7 @@ const markdownStyles = {
   },
 } as const;
 
-export default function MessageBubble({ message, streaming }: MessageBubbleProps) {
+export default function MessageBubble({ message, streaming, chatId }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
 
   const isUser = message.role === 'user';
@@ -622,7 +625,7 @@ export default function MessageBubble({ message, streaming }: MessageBubbleProps
                     const match = /language-(\w+)/.exec(className ?? '');
                     const code = extractText(children).replace(/\n$/, '');
                     if (match) {
-                      return <CodeBlock language={match[1]} code={code} highlighted={children} />;
+                      return <CodeBlock language={match[1]} code={code} highlighted={children} chatId={chatId} />;
                     }
                     return (
                       <code className={className} {...props}>
