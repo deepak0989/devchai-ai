@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import {
   Area,
@@ -64,11 +64,12 @@ import TuneIcon from '@mui/icons-material/Tune';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PaletteIcon from '@mui/icons-material/Palette';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { api, AdminUserRow } from '../api/client';
 import { Message } from '../types';
 import { useAppSettings } from '../lib/settings';
 import BrandLogo from '../components/BrandLogo';
-import { lightTheme } from '../theme';
+import { lightTheme, lightBackground } from '../theme';
 
 type TabKey = 'overview' | 'users' | 'billing' | 'settings';
 
@@ -913,6 +914,30 @@ export default function AdminDashboard() {
     }
   }
 
+  function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setSettingsError('Please choose an image file (PNG, JPG, WEBP, GIF or SVG).');
+      return;
+    }
+    if (file.size > 512 * 1024) {
+      setSettingsError('Logo image must be 512 KB or smaller.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl === 'string') {
+        setBrandingDraft((prev) => ({ ...prev, logoUrl: dataUrl }));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
   const renderSettings = () => {
     if (loading) {
       return <SkeletonCard height={280} />;
@@ -1005,20 +1030,27 @@ export default function AdminDashboard() {
                 value={brandingDraft.logoUrl}
                 onChange={(event) => setBrandingDraft((prev) => ({ ...prev, logoUrl: event.target.value }))}
                 placeholder="https://example.com/logo.png"
-                inputProps={{ maxLength: 300 }}
+                inputProps={{ maxLength: 700000 }}
                 disabled={settingsSaving}
                 sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
               />
-              <TextField
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1.5, flexWrap: 'wrap' }}>
+              <Button
+                component="label"
+                variant="outlined"
                 size="small"
-                label="Tagline"
-                value={brandingDraft.tagline}
-                onChange={(event) => setBrandingDraft((prev) => ({ ...prev, tagline: event.target.value }))}
-                placeholder="AI for developers"
-                inputProps={{ maxLength: 90 }}
                 disabled={settingsSaving}
-                sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
-              />
+                startIcon={<UploadFileIcon />}
+                sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 3, borderColor: 'rgba(17,24,39,0.15)' }}
+              >
+                Upload logo image
+                <input type="file" accept="image/*" hidden onChange={handleLogoUpload} />
+              </Button>
+              <Typography variant="caption" color="text.secondary">
+                PNG, JPG, WEBP, GIF or SVG — max 512 KB. Replaces the emoji/text logo everywhere.
+              </Typography>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
@@ -1227,7 +1259,7 @@ export default function AdminDashboard() {
 
   return (
     <ThemeProvider theme={lightTheme}>
-      <Box sx={{ display: 'flex', minHeight: '100vh', background: '#f5f5f4' }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', background: lightBackground, backgroundAttachment: 'fixed' }}>
       <Box sx={{ width: 260, background: 'linear-gradient(180deg, #111827 0%, #0f172a 100%)', color: '#f8fafc', p: 2.5, display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1 }}>
           <BrandLogo size={30} />
