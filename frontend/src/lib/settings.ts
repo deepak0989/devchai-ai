@@ -6,6 +6,7 @@ export interface Branding {
   logo: string;
   tagline: string;
   logoUrl: string;
+  accent: string;
 }
 
 export interface AppSettings {
@@ -19,6 +20,7 @@ export const DEFAULT_BRANDING: Branding = {
   logo: 'M',
   tagline: 'AI for developers',
   logoUrl: '',
+  accent: '#10a37f',
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -47,6 +49,7 @@ export async function loadAppSettings(): Promise<AppSettings> {
           logo: settings.branding?.logo || DEFAULT_BRANDING.logo,
           tagline: settings.branding?.tagline || DEFAULT_BRANDING.tagline,
           logoUrl: settings.branding?.logoUrl || '',
+          accent: settings.branding?.accent || DEFAULT_BRANDING.accent,
         },
         loaded: true,
       };
