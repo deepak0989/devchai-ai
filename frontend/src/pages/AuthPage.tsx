@@ -252,11 +252,11 @@ export default function AuthPage() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.05fr 0.95fr' },
-            gap: { xs: 3, sm: 5, md: 5, lg: 7 },
+            gridTemplateColumns: { xs: '1fr', lg: '1.05fr 0.95fr' },
+            gap: { xs: 3, sm: 5, lg: 7 },
             alignItems: 'center',
-            pt: { xs: 12, sm: 14, md: 0 },
-            pb: { xs: 10, md: 0 },
+            pt: { xs: 12, sm: 14, lg: 0 },
+            pb: { xs: 10, lg: 0 },
             '@keyframes heroFadeUp': {
               from: { opacity: 0, transform: 'translateY(18px)' },
               to: { opacity: 1, transform: 'translateY(0)' },
@@ -272,7 +272,8 @@ export default function AuthPage() {
                 gap: 1,
                 px: 1.5,
                 py: 0.75,
-                mb: { md: 2, lg: 2.5 },
+                mb: { lg: 2, xl: 2.5 },
+                mx: { xs: 'auto', lg: 0 },
                 borderRadius: 999,
                 border: 1,
                 borderColor: 'divider',
@@ -311,6 +312,7 @@ export default function AuthPage() {
                 letterSpacing: '-0.045em',
                 lineHeight: 1.12,
                 fontSize: 'clamp(2rem, 2.6vw + 1.3rem, 3.6rem)',
+                textAlign: { xs: 'center', lg: 'left' },
               }}
             >
               Code, debug and
@@ -340,9 +342,11 @@ export default function AuthPage() {
               variant="body1"
               color="text.secondary"
               sx={{
-                mb: { xs: 3, md: 3, lg: 4 },
+                mb: { xs: 3, lg: 4 },
                 maxWidth: 460,
+                mx: { xs: 'auto', lg: 0 },
                 fontSize: { xs: '0.95rem', md: '1.05rem' },
+                textAlign: { xs: 'center', lg: 'left' },
               }}
             >
               The best AI models, a developer-first experience, and voice — all in one
@@ -356,7 +360,8 @@ export default function AuthPage() {
                 p: 0,
                 m: 0,
                 maxWidth: 520,
-                display: { xs: 'none', md: 'block' },
+                mx: { xs: 'auto', lg: 0 },
+                display: { xs: 'none', lg: 'block' },
               }}
             >
               {FEATURES.map((feature) => (
@@ -366,8 +371,8 @@ export default function AuthPage() {
                   sx={{
                     display: 'flex',
                     gap: 2,
-                    mb: 1.75,
-                    p: { md: 1.5, lg: 1.75 },
+                    mb: 1.5,
+                    p: { lg: 1.4, xl: 1.75 },
                     borderRadius: 3,
                     border: 1,
                     borderColor: 'divider',
