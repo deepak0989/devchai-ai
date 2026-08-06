@@ -13,9 +13,11 @@ import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
 import MicIcon from '@mui/icons-material/Mic';
 import BoltIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../context/ThemeModeProvider';
 import { useAppSettings } from '../lib/settings';
 import { darkBackground, lightBackground } from '../theme';
 import BrandLogo from '../components/BrandLogo';
+import MatrixRain from '../components/MatrixRain';
 
 function GoogleIcon() {
   return (
@@ -70,6 +72,7 @@ const FEATURES = [
 
 export default function AuthPage() {
   const { signInWithGoogle } = useAuth();
+  const { mode } = useThemeMode();
   const { branding } = useAppSettings();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +109,8 @@ export default function AuthPage() {
         overflow: 'hidden',
       }}
     >
+      {mode === 'dark' && <MatrixRain />}
+
       <Box
         sx={{
           position: 'absolute',
