@@ -672,6 +672,102 @@ router.put('/users/:id/limits', requireAuth, requireAdmin, async (req: AuthReque
   }
 });
 
+router.get('/mini-apps', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+    const visibility = typeof req.query.visibility === 'string' ? req.query.visibility : 'all';
+
+    const [authUsers, appsResult] = await Promise.all([
+      listAuthUsers(),
+      supabase
+        .from('mini_apps')
+        .select('id, user_id, chat_id, name, is_public, created_at, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(500),
+    ]);
+
+    const emailMap = new Map<string, string>();
+    for (const user of authUsers) {
+      emailMap.set(user.id, user.email ?? 'unknown@mydevai.app');
+    }
+
+    let apps = (appsResult.data ?? []).map((app: any) => ({
+      id: app.id,
+      user_id: app.user_id,
+      chat_id: app.chat_id,
+      name: app.name,
+      is_public: app.is_public,
+      created_at: app.created_at,
+      updated_at: app.updated_at,
+      owner: {
+        name: (emailMap.get(app.user_id) ?? '').split('@')[0] || 'User',
+        email: emailMap.get(app.user_id) ?? 'unknown@mydevai.app',
+      },
+    }));
+
+    if (search) {
+      apps = apps.filter(
+        (app: any) =>
+          app.name.toLowerCase().includes(search) ||
+          app.owner.email.toLowerCase().includes(search) ||
+          app.owner.name.toLowerCase().includes(search)
+      );
+    }
+    if (visibility === 'public' || visibility === 'private') {
+      apps = apps.filter((app: any) =>
+        visibility === 'public' ? app.is_public : !app.is_public
+      );
+    }
+
+    const counts = {
+      total: appsResult.data?.length ?? 0,
+      public: (appsResult.data ?? []).filter((a: any) => a.is_public).length,
+      private: (appsResult.data ?? []).filter((a: any) => !a.is_public).length,
+    };
+
+    return res.json({ apps, total: apps.length, counts });
+  } catch (error) {
+    console.error('Admin mini-apps error:', error);
+    return res.status(500).json({ error: 'Failed to load mini-apps' });
+  }
+});
+
+router.patch('/mini-apps/:id', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const isPublic = req.body?.isPublic === true;
+
+    const { data, error } = await supabase
+      .from('mini_apps')
+      .update({ is_public: isPublic, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, name, is_public, updated_at')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'Mini-app not found' });
+    }
+
+    return res.json({ app: data });
+  } catch (error) {
+    console.error('Admin mini-app update error:', error);
+    return res.status(500).json({ error: 'Failed to update mini-app' });
+  }
+});
+
+router.delete('/mini-apps/:id', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('mini_apps').delete().eq('id', id);
+    if (error) throw error;
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin mini-app delete error:', error);
+    return res.status(500).json({ error: 'Failed to delete mini-app' });
+  }
+});
+
 router.get('/billing', requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
   try {
     const [authUsers, messagesResult, credits] = await Promise.all([
