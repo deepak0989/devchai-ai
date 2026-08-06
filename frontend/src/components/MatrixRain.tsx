@@ -19,45 +19,46 @@ export default function MatrixRain() {
     let columns = 0;
     let drops: number[] = [];
 
-    function resize() {
-      const parent = canvas.parentElement;
+    function resize(c: HTMLCanvasElement, context: CanvasRenderingContext2D) {
+      const parent = c.parentElement;
       if (!parent) return;
       const dpr = window.devicePixelRatio || 1;
       width = parent.clientWidth;
       height = parent.clientHeight;
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.width = Math.floor(width * dpr);
+      c.height = Math.floor(height * dpr);
+      c.style.width = `${width}px`;
+      c.style.height = `${height}px`;
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
       columns = Math.ceil(width / fontSize);
       drops = Array.from({ length: columns }, () => Math.floor(Math.random() * -60));
     }
 
     let rafId = 0;
-    function tick() {
-      ctx.fillStyle = 'rgba(10, 15, 12, 0.12)';
-      ctx.fillRect(0, 0, width, height);
-      ctx.font = `${fontSize}px monospace`;
+    function tick(c: HTMLCanvasElement, context: CanvasRenderingContext2D) {
+      context.fillStyle = 'rgba(10, 15, 12, 0.12)';
+      context.fillRect(0, 0, width, height);
+      context.font = `${fontSize}px monospace`;
       for (let i = 0; i < columns; i++) {
         const char = GLYPHS[Math.floor(Math.random() * GLYPHS.length)] ?? 'A';
         const x = i * fontSize;
         const y = drops[i] * fontSize;
         const isHead = Math.random() > 0.975;
-        ctx.fillStyle = isHead ? '#d7fbe4' : 'rgba(0, 230, 118, 0.85)';
-        ctx.fillText(char, x, y);
+        context.fillStyle = isHead ? '#d7fbe4' : 'rgba(0, 230, 118, 0.85)';
+        context.fillText(char, x, y);
         if (y > height && Math.random() > 0.975) drops[i] = 0;
         drops[i] += 1;
       }
-      rafId = requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(() => tick(c, context));
     }
 
-    resize();
-    tick();
-    window.addEventListener('resize', resize);
+    resize(canvas, ctx);
+    tick(canvas, ctx);
+    const handleResize = () => resize(canvas, ctx);
+    window.addEventListener('resize', handleResize);
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
