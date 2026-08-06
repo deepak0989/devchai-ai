@@ -91,7 +91,7 @@ export default function ChatInput({
             overflowY: 'auto',
             borderRadius: 3,
             border: 1,
-            borderColor: 'rgba(17,24,39,0.08)',
+            borderColor: 'divider',
             zIndex: 20,
           }}
         >
@@ -129,9 +129,9 @@ export default function ChatInput({
           px: 1.5,
           py: 1,
           border: 1,
-          borderColor: 'rgba(17,24,39,0.08)',
+          borderColor: 'divider',
           borderRadius: 4,
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
           boxShadow: '0 18px 40px rgba(15, 23, 42, 0.04)',
           '&:focus-within': {
             borderColor: 'rgba(16,163,127,0.35)',
@@ -165,7 +165,7 @@ export default function ChatInput({
               flexShrink: 0,
               mb: 0.25,
               color: micActive ? '#fff' : 'text.primary',
-              bgcolor: micActive ? 'rgba(239, 68, 68, 0.9)' : 'rgba(17,24,39,0.04)',
+              bgcolor: micActive ? 'rgba(239, 68, 68, 0.9)' : 'action.hover',
               animation: micActive ? 'pulse 1.4s ease-in-out infinite' : 'none',
               '@keyframes pulse': {
                 '0%, 100%': { boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.5)' },
@@ -203,7 +203,7 @@ export default function ChatInput({
               flexShrink: 0,
               mb: 0.25,
               bgcolor: 'primary.main',
-              color: '#fff',
+              color: 'primary.contrastText',
               borderRadius: 2,
               '&:hover': { bgcolor: 'primary.dark' },
               '&.Mui-disabled': {
