@@ -12,10 +12,14 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { Chat } from '../types';
+import { useThemeMode } from '../context/ThemeModeProvider';
+import { useAppSettings } from '../lib/settings';
+import BrandLogo from './BrandLogo';
 
 interface SidebarProps {
   chats: Chat[];
@@ -65,35 +69,35 @@ export default function Sidebar({
   onDeleteChat,
   onLogout,
 }: SidebarProps) {
+  const { mode, toggleMode } = useThemeMode();
+  const { branding } = useAppSettings();
+
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        bgcolor: '#f5f5f5',
+        bgcolor: 'background.default',
         borderRight: 1,
         borderColor: 'divider',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2.25 }}>
-        <Box
-          sx={{
-            width: 30,
-            height: 30,
-            borderRadius: 2,
-            bgcolor: 'primary.main',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 20px rgba(16, 163, 127, 0.18)',
-          }}
-        >
-          <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 17 }} />
+        <BrandLogo size={34} />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            variant="h6"
+            fontWeight={800}
+            noWrap
+            sx={{ fontSize: '1.05rem', letterSpacing: '-0.02em' }}
+          >
+            {branding.appName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+            {branding.tagline}
+          </Typography>
         </Box>
-        <Typography variant="h6" fontWeight={700} noWrap>
-          DevChat AI
-        </Typography>
       </Box>
 
       <Box sx={{ px: 2, pb: 2 }}>
@@ -197,7 +201,7 @@ export default function Sidebar({
                               bgcolor: 'rgba(16,163,127,0.15)',
                             },
                             '&:hover': {
-                              bgcolor: 'rgba(17, 24, 39, 0.04)',
+                              bgcolor: 'action.hover',
                             },
                           }}
                         >
@@ -239,12 +243,22 @@ export default function Sidebar({
         <Typography variant="body2" noWrap sx={{ flex: 1, fontWeight: 500 }}>
           {userEmail}
         </Typography>
+        <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+          <IconButton
+            size="small"
+            onClick={toggleMode}
+            color="inherit"
+            sx={{ borderRadius: 2, '&:hover': { bgcolor: 'action.hover' } }}
+          >
+            {mode === 'light' ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
         <Tooltip title="Log out">
           <IconButton
             size="small"
             onClick={onLogout}
             color="inherit"
-            sx={{ borderRadius: 2, '&:hover': { bgcolor: 'rgba(17,24,39,0.04)' } }}
+            sx={{ borderRadius: 2, '&:hover': { bgcolor: 'action.hover' } }}
           >
             <LogoutIcon fontSize="small" />
           </IconButton>
