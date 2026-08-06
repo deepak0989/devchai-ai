@@ -11,6 +11,7 @@ export interface Branding {
 
 export interface AppSettings {
   voiceEnabled: boolean;
+  defaultTheme: 'light' | 'dark';
   branding: Branding;
   loaded: boolean;
 }
@@ -25,6 +26,7 @@ export const DEFAULT_BRANDING: Branding = {
 
 const DEFAULT_SETTINGS: AppSettings = {
   voiceEnabled: true,
+  defaultTheme: 'light',
   branding: DEFAULT_BRANDING,
   loaded: false,
 };
@@ -44,6 +46,7 @@ export async function loadAppSettings(): Promise<AppSettings> {
     .then((settings) => {
       cachedSettings = {
         voiceEnabled: settings.voiceEnabled,
+        defaultTheme: settings.defaultTheme === 'dark' ? 'dark' : 'light',
         branding: {
           appName: settings.branding?.appName || DEFAULT_BRANDING.appName,
           logo: settings.branding?.logo || DEFAULT_BRANDING.logo,
