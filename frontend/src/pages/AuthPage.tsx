@@ -11,11 +11,12 @@ import {
 } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import CodeIcon from '@mui/icons-material/Code';
-import TerminalIcon from '@mui/icons-material/Terminal';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import AppShortcutIcon from '@mui/icons-material/AppShortcut';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
 import MicIcon from '@mui/icons-material/Mic';
-import BoltIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeProvider';
 import { useAppSettings } from '../lib/settings';
@@ -48,22 +49,27 @@ function GoogleIcon() {
 
 const FEATURES = [
   {
-    icon: <BoltIcon sx={{ fontSize: 19, color: '#10a37f' }} />,
+    icon: <AutoAwesomeIcon sx={{ fontSize: 19, color: '#a855f7' }} />,
     title: '4 top AI models',
     description: 'GPT-4o mini, Claude 3.5 Sonnet, Gemini 2.0 Flash & DeepSeek',
   },
   {
-    icon: <CodeIcon sx={{ fontSize: 19, color: '#3b82f6' }} />,
+    icon: <AppShortcutIcon sx={{ fontSize: 19, color: '#10a37f' }} />,
+    title: 'Mini-app generator',
+    description: 'Ask for an app or tool — play with the live preview right in chat',
+  },
+  {
+    icon: <DataObjectIcon sx={{ fontSize: 19, color: '#3b82f6' }} />,
     title: 'Code-first markdown',
     description: 'Syntax-highlighted code blocks with one-click copy',
   },
   {
-    icon: <TerminalIcon sx={{ fontSize: 19, color: '#8b5cf6' }} />,
+    icon: <RocketLaunchIcon sx={{ fontSize: 19, color: '#f59e0b' }} />,
     title: 'Run code instantly',
     description: 'Execute Python & JavaScript right in the chat',
   },
   {
-    icon: <KeyboardCommandKeyIcon sx={{ fontSize: 19, color: '#f59e0b' }} />,
+    icon: <KeyboardCommandKeyIcon sx={{ fontSize: 19, color: '#8b5cf6' }} />,
     title: 'Dev slash commands',
     description: '/review, /debug, /tests, /refactor and more',
   },
@@ -112,7 +118,7 @@ export default function AuthPage() {
           theme.palette.mode === 'dark' ? darkBackground : lightBackground,
         backgroundAttachment: 'fixed',
         position: 'relative',
-        overflow: 'hidden',
+        overflowX: 'hidden',
       }}
     >
       {mode === 'dark' && <MatrixRain />}
@@ -246,8 +252,8 @@ export default function AuthPage() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.1fr 0.9fr' },
-            gap: { xs: 3, sm: 5, md: 7 },
+            gridTemplateColumns: { xs: '1fr', md: '1.05fr 0.95fr' },
+            gap: { xs: 3, sm: 5, md: 5, lg: 7 },
             alignItems: 'center',
             pt: { xs: 12, sm: 14, md: 0 },
             pb: { xs: 10, md: 0 },
@@ -266,7 +272,7 @@ export default function AuthPage() {
                 gap: 1,
                 px: 1.5,
                 py: 0.75,
-                mb: 2.5,
+                mb: { md: 2, lg: 2.5 },
                 borderRadius: 999,
                 border: 1,
                 borderColor: 'divider',
@@ -334,7 +340,7 @@ export default function AuthPage() {
               variant="body1"
               color="text.secondary"
               sx={{
-                mb: { xs: 3, md: 4 },
+                mb: { xs: 3, md: 3, lg: 4 },
                 maxWidth: 460,
                 fontSize: { xs: '0.95rem', md: '1.05rem' },
               }}
@@ -361,7 +367,7 @@ export default function AuthPage() {
                     display: 'flex',
                     gap: 2,
                     mb: 1.75,
-                    p: 1.75,
+                    p: { md: 1.5, lg: 1.75 },
                     borderRadius: 3,
                     border: 1,
                     borderColor: 'divider',
