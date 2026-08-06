@@ -5,6 +5,7 @@ export interface Branding {
   appName: string;
   logo: string;
   tagline: string;
+  logoUrl: string;
 }
 
 export interface AppSettings {
@@ -17,6 +18,7 @@ export const DEFAULT_BRANDING: Branding = {
   appName: 'MyDevAI',
   logo: 'M',
   tagline: 'AI for developers',
+  logoUrl: '',
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -44,6 +46,7 @@ export async function loadAppSettings(): Promise<AppSettings> {
           appName: settings.branding?.appName || DEFAULT_BRANDING.appName,
           logo: settings.branding?.logo || DEFAULT_BRANDING.logo,
           tagline: settings.branding?.tagline || DEFAULT_BRANDING.tagline,
+          logoUrl: settings.branding?.logoUrl || '',
         },
         loaded: true,
       };
