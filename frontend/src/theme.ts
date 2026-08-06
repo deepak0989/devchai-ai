@@ -1,5 +1,11 @@
 import { createTheme } from '@mui/material/styles';
 
+export const lightBackground =
+  'linear-gradient(180deg, #f5f5f4 0%, #e6f1ec 100%)';
+
+export const darkBackground =
+  'radial-gradient(1100px 480px at 50% -120px, rgba(0, 230, 118, 0.08) 0%, transparent 60%), linear-gradient(180deg, #0a0f0c 0%, #0d1410 100%)';
+
 const baseComponents = {
   MuiButton: {
     styleOverrides: {
@@ -68,7 +74,8 @@ export const lightTheme = createTheme({
         },
         body: {
           margin: 0,
-          backgroundColor: '#f5f5f4',
+          background: lightBackground,
+          backgroundAttachment: 'fixed',
           color: '#111827',
           scrollbarColor: '#d4d4d8 transparent',
           '&::-webkit-scrollbar': { width: 8, height: 8 },
@@ -119,6 +126,21 @@ export const darkTheme = createTheme({
   },
   components: {
     ...baseComponents,
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 12,
+          fontWeight: 600,
+          '&.MuiButton-contained': {
+            background: 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #00c853 0%, #00b24a 100%)',
+            },
+          },
+        },
+      },
+    },
     MuiCssBaseline: {
       styleOverrides: {
         html: {
@@ -126,7 +148,8 @@ export const darkTheme = createTheme({
         },
         body: {
           margin: 0,
-          backgroundColor: '#0a0f0c',
+          background: darkBackground,
+          backgroundAttachment: 'fixed',
           color: '#d1fae5',
           scrollbarColor: '#1f2b24 transparent',
           '&::-webkit-scrollbar': { width: 8, height: 8 },
