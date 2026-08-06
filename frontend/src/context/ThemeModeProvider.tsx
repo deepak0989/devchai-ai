@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { ThemeProvider, Theme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createAppTheme } from '../theme';
@@ -25,7 +25,7 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  const { branding } = useAppSettings();
+  const { branding, defaultTheme, loaded } = useAppSettings();
 
   const toggleMode = useCallback(() => {
     setMode((prev) => {
@@ -38,6 +38,19 @@ export function ThemeModeProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(STORAGE_KEY);
+    } catch {
+      // ignore storage errors
+    }
+    if (stored !== 'light' && stored !== 'dark') {
+      setMode(defaultTheme === 'dark' ? 'dark' : 'light');
+    }
+  }, [loaded, defaultTheme]);
 
   const value = useMemo<ThemeModeContextValue>(() => {
     const theme = createAppTheme(mode, branding.accent);
