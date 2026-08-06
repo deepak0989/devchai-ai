@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Container,
   IconButton,
@@ -12,11 +13,9 @@ import {
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import DataObjectIcon from '@mui/icons-material/DataObject';
 import AppShortcutIcon from '@mui/icons-material/AppShortcut';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
-import MicIcon from '@mui/icons-material/Mic';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeProvider';
 import { useAppSettings } from '../lib/settings';
@@ -47,38 +46,167 @@ function GoogleIcon() {
   );
 }
 
-const FEATURES = [
+const TOP_FEATURES = [
   {
-    icon: <AutoAwesomeIcon sx={{ fontSize: 19, color: '#a855f7' }} />,
-    title: '4 top AI models',
-    description: 'GPT-4o mini, Claude 3.5 Sonnet, Gemini 2.0 Flash & DeepSeek',
-  },
-  {
-    icon: <AppShortcutIcon sx={{ fontSize: 19, color: '#10a37f' }} />,
+    number: '01',
+    tag: 'Top pick',
+    accent: '#10a37f',
+    icon: <AppShortcutIcon sx={{ fontSize: 22 }} />,
     title: 'Mini-app generator',
-    description: 'Ask for an app or tool — play with the live preview right in chat',
+    description:
+      'Ask for a calculator, game, dashboard or landing page — get a working app with a live preview you can share by link.',
   },
   {
-    icon: <DataObjectIcon sx={{ fontSize: 19, color: '#3b82f6' }} />,
-    title: 'Code-first markdown',
-    description: 'Syntax-highlighted code blocks with one-click copy',
-  },
-  {
-    icon: <RocketLaunchIcon sx={{ fontSize: 19, color: '#f59e0b' }} />,
+    number: '02',
+    tag: null,
+    accent: '#f59e0b',
+    icon: <RocketLaunchIcon sx={{ fontSize: 22 }} />,
     title: 'Run code instantly',
-    description: 'Execute Python & JavaScript right in the chat',
+    description:
+      'Python & JavaScript execute right inside the chat. No setup, no terminal, no copy-paste — just results.',
   },
   {
-    icon: <KeyboardCommandKeyIcon sx={{ fontSize: 19, color: '#8b5cf6' }} />,
-    title: 'Dev slash commands',
-    description: '/review, /debug, /tests, /refactor and more',
-  },
-  {
-    icon: <MicIcon sx={{ fontSize: 19, color: '#d97757' }} />,
-    title: 'Voice chat',
-    description: 'Talk to the AI and hear replies aloud',
+    number: '03',
+    tag: null,
+    accent: '#a855f7',
+    icon: <AutoAwesomeIcon sx={{ fontSize: 22 }} />,
+    title: '4 top AI models',
+    description:
+      'GPT-4o mini, Claude 3.5 Sonnet, Gemini 2.0 Flash and DeepSeek V3 — switch any time.',
   },
 ];
+
+const TRUST_POINTS = ['Free to start', 'No credit card', 'Runs in your browser'];
+
+function TopFeaturesCards() {
+  return (
+    <Box
+      component="ul"
+      sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: 1.75 }}
+    >
+      {TOP_FEATURES.map((feature) => (
+        <Box
+          component="li"
+          key={feature.title}
+          sx={{
+            position: 'relative',
+            overflow: 'hidden',
+            p: 2,
+            borderRadius: 3.5,
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'rgba(17,24,20,0.6)'
+                : 'rgba(255,255,255,0.72)',
+            backdropFilter: 'blur(6px)',
+            transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 4,
+              height: '100%',
+              background: feature.accent,
+              opacity: 0.85,
+            },
+            '&:hover': {
+              transform: 'translateY(-3px)',
+              borderColor: feature.accent,
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? `0 16px 34px rgba(0,0,0,0.4)`
+                  : `0 16px 34px ${feature.accent}22`,
+            },
+          }}
+        >
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}
+          >
+            <Typography
+              variant="caption"
+              fontWeight={800}
+              sx={{
+                fontFamily: 'Consolas, monospace',
+                letterSpacing: 1.5,
+                color: 'text.disabled',
+              }}
+            >
+              {feature.number}
+            </Typography>
+            {feature.tag && (
+              <Chip
+                label={feature.tag}
+                size="small"
+                sx={{
+                  height: 20,
+                  bgcolor: `${feature.accent}1A`,
+                  color: feature.accent,
+                  fontWeight: 700,
+                  fontSize: 11,
+                }}
+              />
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.75, alignItems: 'flex-start' }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2.5,
+                bgcolor: `${feature.accent}1A`,
+                color: feature.accent,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {feature.icon}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.98rem' }}>
+                {feature.title}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.25, lineHeight: 1.5 }}
+              >
+                {feature.description}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function TrustLine({ centered = false }: { centered?: boolean }) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: centered ? 'center' : 'flex-start',
+        gap: 2.5,
+        flexWrap: 'wrap',
+        mt: 2.25,
+      }}
+    >
+      {TRUST_POINTS.map((point) => (
+        <Box key={point} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <CheckCircleIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            {point}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 export default function AuthPage() {
   const { signInWithGoogle } = useAuth();
@@ -353,64 +481,18 @@ export default function AuthPage() {
               place. No setup, no cards. Just sign in and start building.
             </Typography>
 
-            <Box
-              component="ul"
-              sx={{
-                listStyle: 'none',
-                p: 0,
-                m: 0,
-                maxWidth: 520,
-                mx: { xs: 'auto', lg: 0 },
-                display: { xs: 'none', lg: 'block' },
-              }}
-            >
-              {FEATURES.map((feature) => (
-                <Box
-                  component="li"
-                  key={feature.title}
-                  sx={{
-                    display: 'flex',
-                    gap: 2,
-                    mb: 1.5,
-                    p: { lg: 1.4, xl: 1.75 },
-                    borderRadius: 3,
-                    border: 1,
-                    borderColor: 'divider',
-                    bgcolor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(17,24,20,0.6)'
-                        : 'rgba(255,255,255,0.7)',
-                    backdropFilter: 'blur(6px)',
-                    transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                    '&:hover': {
-                      transform: 'translateY(-3px)',
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? '0 14px 30px rgba(0,0,0,0.35)'
-                          : '0 14px 30px rgba(15,23,42,0.10)',
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2.5,
-                      bgcolor: 'action.hover',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {feature.icon}
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="subtitle2" fontWeight={700}>{feature.title}</Typography>
-                    <Typography variant="body2" color="text.secondary">{feature.description}</Typography>
-                  </Box>
-                </Box>
-              ))}
+            <Box sx={{ display: { xs: 'none', lg: 'block' }, mt: 2.5, maxWidth: 520, mx: { xs: 'auto', lg: 0 } }}>
+              <Typography
+                variant="overline"
+                sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: 1.5 }}
+              >
+                Why developers love it
+              </Typography>
+              <Typography variant="h6" fontWeight={800} sx={{ mt: 0.25, mb: 2 }}>
+                Top 3 features
+              </Typography>
+              <TopFeaturesCards />
+              <TrustLine />
             </Box>
           </Box>
 
@@ -497,6 +579,26 @@ export default function AuthPage() {
             >
               A new account is created automatically on your first sign-in.
             </Typography>
+          </Box>
+
+          <Box sx={{ display: { lg: 'none' }, maxWidth: 440, mx: 'auto', width: '100%', mt: 4 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                display: 'block',
+                textAlign: 'center',
+                color: 'primary.main',
+                fontWeight: 800,
+                letterSpacing: 1.5,
+              }}
+            >
+              Why developers love it
+            </Typography>
+            <Typography variant="h6" fontWeight={800} sx={{ textAlign: 'center', mt: 0.25, mb: 2 }}>
+              Top 3 features
+            </Typography>
+            <TopFeaturesCards />
+            <TrustLine centered />
           </Box>
         </Box>
       </Container>
