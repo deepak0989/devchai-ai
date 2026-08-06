@@ -32,6 +32,20 @@ function cleanString(value: unknown, maxLength: number): string {
   return chars.slice(0, maxLength).join('');
 }
 
+function cleanLogoUrl(value: string): string | null {
+  const cleaned = value.trim();
+  if (cleaned === '') return '';
+  if (cleaned.startsWith('data:image/')) {
+    if (cleaned.length > 700000) return null;
+    if (/^data:image\/(png|jpeg|jpg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(cleaned)) {
+      return cleaned;
+    }
+    return null;
+  }
+  if (cleaned.length <= 300 && /^https?:\/\//i.test(cleaned)) return cleaned;
+  return null;
+}
+
 export async function getBrandingSettings(): Promise<BrandingSettings> {
   const { data } = await supabase
     .from('app_settings')
@@ -43,11 +57,12 @@ export async function getBrandingSettings(): Promise<BrandingSettings> {
     | { appName?: string; logo?: string; tagline?: string; logoUrl?: string }
     | undefined) ?? {};
 
+  const rawLogoUrl = typeof value.logoUrl === 'string' ? value.logoUrl : '';
   return {
     appName: cleanString(value.appName, 40) || DEFAULT_BRANDING.appName,
     logo: cleanString(value.logo, 4) || DEFAULT_BRANDING.logo,
     tagline: cleanString(value.tagline, 90) || DEFAULT_BRANDING.tagline,
-    logoUrl: cleanString(value.logoUrl, 300),
+    logoUrl: cleanLogoUrl(rawLogoUrl) ?? '',
   };
 }
 
@@ -61,7 +76,11 @@ export async function saveBrandingSettings(input: {
   const appName = cleanString(input.appName ?? '', 40) || current.appName;
   const logo = cleanString(input.logo ?? '', 4) || current.logo;
   const tagline = cleanString(input.tagline ?? '', 90) || current.tagline;
-  const logoUrl = cleanString(input.logoUrl ?? '', 300);
+  let logoUrl = current.logoUrl;
+  if (input.logoUrl !== undefined) {
+    const cleaned = cleanLogoUrl(input.logoUrl);
+    if (cleaned !== null) logoUrl = cleaned;
+  }
   await supabase
     .from('app_settings')
     .upsert({ key: 'branding', value: { appName, logo, tagline, logoUrl } }, { onConflict: 'key' });
