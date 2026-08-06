@@ -126,6 +126,8 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
     return res.status(404).json({ error: 'Chat not found' });
   }
 
+  await supabase.from('mini_apps').delete().eq('chat_id', chat.id);
+
   const { error } = await supabase.from('chats').delete().eq('id', chat.id);
   if (error) {
     return res.status(500).json({ error: error.message });
