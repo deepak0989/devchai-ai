@@ -16,12 +16,14 @@ export interface BrandingSettings {
   appName: string;
   logo: string;
   tagline: string;
+  logoUrl: string;
 }
 
 export const DEFAULT_BRANDING: BrandingSettings = {
   appName: 'MyDevAI',
   logo: 'M',
   tagline: 'AI for developers',
+  logoUrl: '',
 };
 
 function cleanString(value: unknown, maxLength: number): string {
@@ -38,13 +40,14 @@ export async function getBrandingSettings(): Promise<BrandingSettings> {
     .maybeSingle();
 
   const value = (data?.value as
-    | { appName?: string; logo?: string; tagline?: string }
+    | { appName?: string; logo?: string; tagline?: string; logoUrl?: string }
     | undefined) ?? {};
 
   return {
     appName: cleanString(value.appName, 40) || DEFAULT_BRANDING.appName,
     logo: cleanString(value.logo, 4) || DEFAULT_BRANDING.logo,
     tagline: cleanString(value.tagline, 90) || DEFAULT_BRANDING.tagline,
+    logoUrl: cleanString(value.logoUrl, 300),
   };
 }
 
@@ -52,14 +55,16 @@ export async function saveBrandingSettings(input: {
   appName?: string;
   logo?: string;
   tagline?: string;
+  logoUrl?: string;
 }): Promise<void> {
   const current = await getBrandingSettings();
   const appName = cleanString(input.appName ?? '', 40) || current.appName;
   const logo = cleanString(input.logo ?? '', 4) || current.logo;
   const tagline = cleanString(input.tagline ?? '', 90) || current.tagline;
+  const logoUrl = cleanString(input.logoUrl ?? '', 300);
   await supabase
     .from('app_settings')
-    .upsert({ key: 'branding', value: { appName, logo, tagline } }, { onConflict: 'key' });
+    .upsert({ key: 'branding', value: { appName, logo, tagline, logoUrl } }, { onConflict: 'key' });
 }
 
 export async function getFeatureSettings(): Promise<FeatureSettings> {
