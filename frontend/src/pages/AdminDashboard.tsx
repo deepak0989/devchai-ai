@@ -53,6 +53,9 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import DeleteIcon from '@mui/icons-material/Delete';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import BlockIcon from '@mui/icons-material/Block';
@@ -68,14 +71,14 @@ import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PaletteIcon from '@mui/icons-material/Palette';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
-import { api, AdminUserRow } from '../api/client';
+import { api, AdminUserRow, AdminMiniAppRow } from '../api/client';
 import { Message } from '../types';
 import { useAppSettings } from '../lib/settings';
 import { darkenHex, isValidHex } from '../lib/color';
 import BrandLogo from '../components/BrandLogo';
 import { lightTheme, lightBackground } from '../theme';
 
-type TabKey = 'overview' | 'users' | 'billing' | 'settings';
+type TabKey = 'overview' | 'users' | 'billing' | 'settings' | 'miniapps';
 
 interface SummaryCard {
   label: string;
@@ -247,6 +250,15 @@ export default function AdminDashboard() {
   const [confirmUser, setConfirmUser] = useState<{ user: AdminUserRow; action: 'ban' | 'unban' } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const [miniApps, setMiniApps] = useState<AdminMiniAppRow[]>([]);
+  const [miniAppsCounts, setMiniAppsCounts] = useState<{ total: number; public: number; private: number } | null>(null);
+  const [miniAppsLoading, setMiniAppsLoading] = useState(false);
+  const [miniAppSearch, setMiniAppSearch] = useState('');
+  const [miniAppVisibility, setMiniAppVisibility] = useState<'all' | 'public' | 'private'>('all');
+  const [miniAppBusyId, setMiniAppBusyId] = useState<string | null>(null);
+  const [confirmMiniAppDelete, setConfirmMiniAppDelete] = useState<AdminMiniAppRow | null>(null);
+  const [miniAppError, setMiniAppError] = useState<string | null>(null);
+
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [defaultThemeDraft, setDefaultThemeDraft] = useState<'light' | 'dark'>('light');
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
@@ -321,6 +333,22 @@ export default function AdminDashboard() {
     []
   );
 
+  const loadMiniApps = useCallback(async (query: string, visibility: 'all' | 'public' | 'private') => {
+    setMiniAppsLoading(true);
+    try {
+      const data = await api.adminGetMiniApps({
+        search: query || undefined,
+        visibility,
+      });
+      setMiniApps(data.apps);
+      setMiniAppsCounts(data.counts);
+    } catch (err) {
+      setMiniAppError(err instanceof Error ? err.message : 'Failed to load mini-apps.');
+    } finally {
+      setMiniAppsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -331,6 +359,13 @@ export default function AdminDashboard() {
     }, 400);
     return () => clearTimeout(timer);
   }, [search, roleFilter, statusFilter, loadUsers]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadMiniApps(miniAppSearch, miniAppVisibility);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [miniAppSearch, miniAppVisibility, loadMiniApps]);
 
   const pageCount = Math.max(1, Math.ceil(userRows.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -466,9 +501,54 @@ export default function AdminDashboard() {
   const navItems: Array<{ key: TabKey; label: string }> = [
     { key: 'overview', label: 'Overview' },
     { key: 'users', label: 'Users' },
+    { key: 'miniapps', label: 'Mini-apps' },
     { key: 'billing', label: 'Billing' },
     { key: 'settings', label: 'Settings' },
   ];
+
+  async function handleToggleMiniApp(app: AdminMiniAppRow) {
+    setMiniAppBusyId(app.id);
+    setMiniAppError(null);
+    try {
+      await api.adminToggleMiniApp(app.id, !app.is_public);
+      setMiniApps((prev) =>
+        prev.map((row) => (row.id === app.id ? { ...row, is_public: !app.is_public } : row))
+      );
+      if (miniAppsCounts) {
+        setMiniAppsCounts({
+          ...miniAppsCounts,
+          public: miniAppsCounts.public + (!app.is_public ? 1 : -1),
+          private: miniAppsCounts.private + (app.is_public ? 1 : -1),
+        });
+      }
+    } catch (err) {
+      setMiniAppError(err instanceof Error ? err.message : 'Failed to update mini-app.');
+    } finally {
+      setMiniAppBusyId(null);
+    }
+  }
+
+  async function handleDeleteMiniApp(app: AdminMiniAppRow) {
+    setMiniAppBusyId(app.id);
+    setMiniAppError(null);
+    try {
+      await api.adminDeleteMiniApp(app.id);
+      setMiniApps((prev) => prev.filter((row) => row.id !== app.id));
+      if (miniAppsCounts) {
+        setMiniAppsCounts({
+          ...miniAppsCounts,
+          total: miniAppsCounts.total - 1,
+          public: miniAppsCounts.public + (app.is_public ? -1 : 0),
+          private: miniAppsCounts.private + (app.is_public ? 0 : -1),
+        });
+      }
+      setConfirmMiniAppDelete(null);
+    } catch (err) {
+      setMiniAppError(err instanceof Error ? err.message : 'Failed to delete mini-app.');
+    } finally {
+      setMiniAppBusyId(null);
+    }
+  }
 
   const renderOverview = () => {
     if (loading) {
@@ -964,6 +1044,175 @@ export default function AdminDashboard() {
     };
     reader.readAsDataURL(file);
   }
+
+  const renderMiniApps = () => {
+    if (miniAppsLoading && miniApps.length === 0) {
+      return <SkeletonCard height={400} />;
+    }
+
+    return (
+      <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>Deployed mini-apps</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {miniAppsCounts
+                    ? `${miniAppsCounts.total} total · ${miniAppsCounts.public} public · ${miniAppsCounts.private} private`
+                    : `${miniApps.length} mini-app${miniApps.length === 1 ? '' : 's'}`}
+                </Typography>
+              </Box>
+              {miniAppsLoading && <CircularProgress size={16} sx={{ ml: 0.5 }} />}
+            </Box>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+              <TextField
+                size="small"
+                placeholder="Search by app or owner"
+                value={miniAppSearch}
+                onChange={(event) => setMiniAppSearch(event.target.value)}
+                sx={{ minWidth: isMobile ? 180 : 240 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Select
+                size="small"
+                value={miniAppVisibility}
+                onChange={(event) => setMiniAppVisibility(event.target.value as 'all' | 'public' | 'private')}
+                sx={{ minWidth: 120 }}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="public">Public</MenuItem>
+                <MenuItem value="private">Private</MenuItem>
+              </Select>
+            </Stack>
+          </Box>
+
+          {miniAppError && (
+            <Alert severity="error" onClose={() => setMiniAppError(null)} sx={{ mb: 2, borderRadius: 2 }}>
+              {miniAppError}
+            </Alert>
+          )}
+
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: isMobile ? 640 : undefined }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Mini-app</TableCell>
+                  <TableCell>Owner</TableCell>
+                  <TableCell>Visibility</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {miniApps.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                      {miniAppsLoading ? 'Loading…' : 'No mini-apps found.'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  miniApps.map((app) => (
+                    <TableRow key={app.id} hover>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600} sx={{ maxWidth: isMobile ? 140 : 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {app.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                          /app/{app.id.slice(0, 8)}…
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                          <Avatar sx={{ width: 30, height: 30, bgcolor: avatarColorFor(app.owner.email), fontSize: 12, fontWeight: 700 }}>
+                            {initialsOf(app.owner.name)}
+                          </Avatar>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 100 : 180 }}>
+                              {app.owner.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 100 : 180, display: 'block' }}>
+                              {app.owner.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          icon={app.is_public ? <VisibilityIcon sx={{ fontSize: 14 }} /> : <VisibilityOffIcon sx={{ fontSize: 14 }} />}
+                          label={app.is_public ? 'Public' : 'Private'}
+                          sx={{
+                            bgcolor: app.is_public ? 'rgba(16,163,127,0.12)' : 'rgba(100,116,139,0.14)',
+                            color: app.is_public ? '#0f766e' : '#475569',
+                            fontWeight: 700,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">{formatDateTime(app.created_at)}</Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                          {app.is_public && (
+                            <Tooltip title="Open public link">
+                              <IconButton
+                                size="small"
+                                onClick={() => window.open(`${window.location.origin}/app/${app.id}`, '_blank')}
+                                sx={{ color: 'text.secondary' }}
+                              >
+                                <OpenInNewIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title={app.is_public ? 'Make private' : 'Make public'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleToggleMiniApp(app)}
+                                disabled={miniAppBusyId === app.id}
+                                sx={{ color: app.is_public ? 'text.secondary' : 'primary.main' }}
+                              >
+                                {miniAppBusyId === app.id ? (
+                                  <CircularProgress size={16} />
+                                ) : app.is_public ? (
+                                  <VisibilityOffIcon fontSize="small" />
+                                ) : (
+                                  <VisibilityIcon fontSize="small" />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title="Delete mini-app">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => setConfirmMiniAppDelete(app)}
+                                disabled={miniAppBusyId === app.id}
+                                sx={{ color: 'text.secondary' }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderSettings = () => {
     if (loading) {
@@ -1462,6 +1711,7 @@ export default function AdminDashboard() {
 
             {activeTab === 'overview' && renderOverview()}
             {activeTab === 'users' && renderUsers()}
+            {activeTab === 'miniapps' && renderMiniApps()}
             {activeTab === 'billing' && renderBilling()}
             {activeTab === 'settings' && renderSettings()}
           </Stack>
@@ -1546,6 +1796,31 @@ export default function AdminDashboard() {
             </Stack>
           )}
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmMiniAppDelete !== null} onClose={() => setConfirmMiniAppDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete mini-app?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            &quot;{confirmMiniAppDelete?.name}&quot; by {confirmMiniAppDelete?.owner.name} ({confirmMiniAppDelete?.owner.email})
+            will be permanently deleted. If it is public, its shared URL will stop working immediately.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setConfirmMiniAppDelete(null)} color="inherit" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={confirmMiniAppDelete !== null && miniAppBusyId === confirmMiniAppDelete.id}
+            startIcon={confirmMiniAppDelete !== null && miniAppBusyId === confirmMiniAppDelete.id ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+            onClick={() => confirmMiniAppDelete && handleDeleteMiniApp(confirmMiniAppDelete)}
+            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2.5 }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Dialog open={confirmUser !== null} onClose={() => setConfirmUser(null)} maxWidth="xs" fullWidth>
