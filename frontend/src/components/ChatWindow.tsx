@@ -415,8 +415,14 @@ export default function ChatWindow({
           />
         ) : (
           <Box sx={{ maxWidth: 860, mx: 'auto', py: 1 }}>
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+            {messages.map((message, index) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                streaming={
+                  streaming && index === messages.length - 1 && message.role === 'assistant'
+                }
+              />
             ))}
           </Box>
         )}
