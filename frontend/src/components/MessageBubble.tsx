@@ -22,6 +22,7 @@ interface MessageBubbleProps {
     error?: boolean;
     command?: string;
   };
+  streaming?: boolean;
 }
 
 function CodeBlock({
@@ -200,7 +201,7 @@ const markdownStyles = {
   },
 } as const;
 
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({ message, streaming }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
 
   const isUser = message.role === 'user';
@@ -374,6 +375,32 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             </Box>
           )}
         </Box>
+
+        {streaming && !isUser && (
+          <Box
+            component="span"
+            aria-hidden="true"
+            sx={{
+              display: 'inline-block',
+              width: 9,
+              height: 18,
+              mt: 0.75,
+              ml: 1.25,
+              verticalAlign: 'bottom',
+              borderRadius: 0.5,
+              bgcolor: 'primary.main',
+              boxShadow: (theme: Theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 0 10px rgba(0,230,118,0.9), 0 0 24px rgba(0,230,118,0.45)'
+                  : '0 0 8px rgba(16,163,127,0.5)',
+              '@keyframes cursorBlink': {
+                '0%, 49%': { opacity: 1 },
+                '50%, 100%': { opacity: 0 },
+              },
+              animation: 'cursorBlink 1s step-end infinite',
+            }}
+          />
+        )}
 
         {!isUser && message.content.length > 0 && (
           <Tooltip title={copied ? 'Copied!' : 'Copy'}>
