@@ -3,9 +3,11 @@ import { supabase } from '../db/supabase';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { config } from '../config';
 import {
+  getBrandingSettings,
   getFeatureSettings,
-  saveFeatureSettings,
   getMaintenanceSettings,
+  saveBrandingSettings,
+  saveFeatureSettings,
   saveMaintenanceSettings,
 } from './settings';
 import { invalidateMaintenanceCache } from '../middleware/maintenance';
@@ -698,11 +700,12 @@ router.get('/billing', requireAuth, requireAdmin, async (_req: AuthRequest, res)
 
 router.get('/settings', requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
   try {
-    const [features, maintenance] = await Promise.all([
+    const [features, maintenance, branding] = await Promise.all([
       getFeatureSettings(),
       getMaintenanceSettings(),
+      getBrandingSettings(),
     ]);
-    return res.json({ ...features, maintenance });
+    return res.json({ ...features, maintenance, branding });
   } catch (error) {
     console.error('Admin settings error:', error);
     return res.status(500).json({ error: 'Failed to load settings' });
@@ -725,11 +728,20 @@ router.put('/settings', requireAuth, requireAdmin, async (req: AuthRequest, res)
       invalidateMaintenanceCache();
     }
 
-    const [features, maintenance] = await Promise.all([
+    if (body.branding !== undefined) {
+      await saveBrandingSettings({
+        appName: typeof body.branding?.appName === 'string' ? body.branding.appName : '',
+        logo: typeof body.branding?.logo === 'string' ? body.branding.logo : '',
+        tagline: typeof body.branding?.tagline === 'string' ? body.branding.tagline : '',
+      });
+    }
+
+    const [features, maintenance, branding] = await Promise.all([
       getFeatureSettings(),
       getMaintenanceSettings(),
+      getBrandingSettings(),
     ]);
-    return res.json({ ...features, maintenance });
+    return res.json({ ...features, maintenance, branding });
   } catch (error) {
     console.error('Admin settings update error:', error);
     return res.status(500).json({ error: 'Failed to save settings' });
