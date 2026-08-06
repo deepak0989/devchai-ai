@@ -11,7 +11,8 @@ import { maintenanceGuard } from './middleware/maintenance';
 const app = express();
 
 app.use(cors({ origin: config.clientUrl, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '3mb' }));
+app.use(express.urlencoded({ extended: true, limit: '3mb' }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'devchat-ai-backend' });
