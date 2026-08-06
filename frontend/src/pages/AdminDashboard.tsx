@@ -44,6 +44,8 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -65,6 +67,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PaletteIcon from '@mui/icons-material/Palette';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { api, AdminUserRow } from '../api/client';
 import { Message } from '../types';
 import { useAppSettings } from '../lib/settings';
@@ -245,6 +248,7 @@ export default function AdminDashboard() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [defaultThemeDraft, setDefaultThemeDraft] = useState<'light' | 'dark'>('light');
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [brandingDraft, setBrandingDraft] = useState({ appName: '', logo: '', tagline: '', logoUrl: '', accent: '' });
@@ -279,6 +283,7 @@ export default function AdminDashboard() {
       setBilling(billingData);
       if (settingsData) {
         setVoiceEnabled(settingsData.voiceEnabled);
+        setDefaultThemeDraft(settingsData.defaultTheme === 'dark' ? 'dark' : 'light');
         setMaintenanceEnabled(settingsData.maintenance.enabled);
         setMaintenanceMessage(settingsData.maintenance.message);
         setBrandingDraft({
@@ -871,6 +876,22 @@ export default function AdminDashboard() {
     }
   }
 
+  async function saveDefaultTheme(next: 'light' | 'dark') {
+    setSettingsSaving(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    try {
+      const result = await api.adminUpdateSettings({ defaultTheme: next });
+      setDefaultThemeDraft(result.defaultTheme === 'dark' ? 'dark' : 'light');
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2000);
+    } catch (err) {
+      setSettingsError(err instanceof Error ? err.message : 'Failed to save settings.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
   async function saveMaintenance(enabled: boolean, message: string) {
     setSettingsSaving(true);
     setSettingsError(null);
@@ -1157,6 +1178,44 @@ export default function AdminDashboard() {
                 {settingsError}
               </Alert>
             )}
+          </CardContent>
+        </Card>
+
+        <Card sx={{ borderRadius: 4, border: 1, borderColor: 'rgba(17,24,39,0.06)', boxShadow: '0 18px 38px rgba(15,23,42,0.04)' }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: 2.5, bgcolor: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <DarkModeIcon sx={{ color: '#6d28d9' }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle1" fontWeight={700}>Default theme</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Theme shown to new visitors. Users who haven't picked a theme follow this; users who chose one keep their choice.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                {settingsSaving && <CircularProgress size={18} />}
+                {settingsSaved && (
+                  <Chip label="Saved" size="small" sx={{ bgcolor: 'rgba(16,163,127,0.12)', color: '#0f766e', fontWeight: 700 }} />
+                )}
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  value={defaultThemeDraft}
+                  onChange={(_event, next: 'light' | 'dark' | null) => {
+                    if (next) saveDefaultTheme(next);
+                  }}
+                  sx={{
+                    '& .MuiToggleButton-root': { textTransform: 'none', fontWeight: 700, px: 2.5 },
+                  }}
+                >
+                  <ToggleButton value="light">Light</ToggleButton>
+                  <ToggleButton value="dark">Dark</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
