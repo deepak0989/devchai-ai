@@ -12,6 +12,56 @@ export interface MaintenanceSettings {
   message: string;
 }
 
+export interface BrandingSettings {
+  appName: string;
+  logo: string;
+  tagline: string;
+}
+
+export const DEFAULT_BRANDING: BrandingSettings = {
+  appName: 'MyDevAI',
+  logo: 'M',
+  tagline: 'AI for developers',
+};
+
+function cleanString(value: unknown, maxLength: number): string {
+  if (typeof value !== 'string') return '';
+  const chars = Array.from(value.trim());
+  return chars.slice(0, maxLength).join('');
+}
+
+export async function getBrandingSettings(): Promise<BrandingSettings> {
+  const { data } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'branding')
+    .maybeSingle();
+
+  const value = (data?.value as
+    | { appName?: string; logo?: string; tagline?: string }
+    | undefined) ?? {};
+
+  return {
+    appName: cleanString(value.appName, 40) || DEFAULT_BRANDING.appName,
+    logo: cleanString(value.logo, 4) || DEFAULT_BRANDING.logo,
+    tagline: cleanString(value.tagline, 90) || DEFAULT_BRANDING.tagline,
+  };
+}
+
+export async function saveBrandingSettings(input: {
+  appName?: string;
+  logo?: string;
+  tagline?: string;
+}): Promise<void> {
+  const current = await getBrandingSettings();
+  const appName = cleanString(input.appName ?? '', 40) || current.appName;
+  const logo = cleanString(input.logo ?? '', 4) || current.logo;
+  const tagline = cleanString(input.tagline ?? '', 90) || current.tagline;
+  await supabase
+    .from('app_settings')
+    .upsert({ key: 'branding', value: { appName, logo, tagline } }, { onConflict: 'key' });
+}
+
 export async function getFeatureSettings(): Promise<FeatureSettings> {
   const { data } = await supabase
     .from('app_settings')
@@ -64,15 +114,17 @@ export async function saveMaintenanceSettings(
 
 router.get('/', async (_req, res) => {
   try {
-    const [features, maintenance] = await Promise.all([
+    const [features, maintenance, branding] = await Promise.all([
       getFeatureSettings(),
       getMaintenanceSettings(),
+      getBrandingSettings(),
     ]);
-    return res.json({ ...features, maintenance });
+    return res.json({ ...features, maintenance, branding });
   } catch {
     return res.json({
       voiceEnabled: true,
       maintenance: { enabled: false, message: '' },
+      branding: DEFAULT_BRANDING,
     });
   }
 });
