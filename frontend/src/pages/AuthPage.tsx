@@ -7,13 +7,14 @@ import {
   Container,
   Typography,
 } from '@mui/material';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CodeIcon from '@mui/icons-material/Code';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
 import MicIcon from '@mui/icons-material/Mic';
 import BoltIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../context/AuthContext';
+import { useAppSettings } from '../lib/settings';
+import BrandLogo from '../components/BrandLogo';
 
 function GoogleIcon() {
   return (
@@ -68,6 +69,7 @@ const FEATURES = [
 
 export default function AuthPage() {
   const { signInWithGoogle } = useAuth();
+  const { branding } = useAppSettings();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -96,7 +98,10 @@ export default function AuthPage() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        background: '#f5f5f4',
+        background: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, #0a0f0c 0%, #0d130f 100%)'
+            : '#f5f5f4',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -138,26 +143,15 @@ export default function AuthPage() {
         >
           <Box sx={{ display: { xs: 'none', md: 'block' }, pr: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-              <Box
-                sx={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 3.5,
-                  background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 18px 38px rgba(16,163,127,0.25)',
-                }}
-              >
-                <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 26 }} />
+              <Box sx={{ boxShadow: '0 18px 38px rgba(16,163,127,0.25)' }}>
+                <BrandLogo size={52} />
               </Box>
               <Box>
                 <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.04em' }}>
-                  DevChat AI
+                  {branding.appName}
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.5 }}>
-                  YOUR AI DEVELOPMENT COMPANION
+                  {branding.tagline.toUpperCase()}
                 </Typography>
               </Box>
             </Box>
@@ -183,8 +177,9 @@ export default function AuthPage() {
                     p: 1.75,
                     borderRadius: 3,
                     border: 1,
-                    borderColor: 'rgba(17,24,39,0.06)',
-                    bgcolor: 'rgba(255,255,255,0.7)',
+                    borderColor: 'divider',
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark' ? 'rgba(17,24,20,0.6)' : 'rgba(255,255,255,0.7)',
                     backdropFilter: 'blur(6px)',
                   }}
                 >
@@ -193,7 +188,7 @@ export default function AuthPage() {
                       width: 40,
                       height: 40,
                       borderRadius: 2.5,
-                      bgcolor: 'rgba(17,24,39,0.04)',
+                      bgcolor: 'action.hover',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -215,31 +210,21 @@ export default function AuthPage() {
             sx={{
               p: { xs: 3, sm: 4.5 },
               borderRadius: 5,
-              bgcolor: '#ffffff',
-              boxShadow: '0 30px 70px rgba(15,23,42,0.10)',
+              bgcolor: 'background.paper',
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 30px 70px rgba(0,0,0,0.5)'
+                  : '0 30px 70px rgba(15,23,42,0.10)',
               border: 1,
-              borderColor: 'rgba(17,24,39,0.05)',
+              borderColor: 'divider',
               maxWidth: 440,
               mx: 'auto',
               width: '100%',
             }}
           >
             <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1, mb: 2 }}>
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6d 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" fontWeight={800}>DevChat AI</Typography>
+              <BrandLogo size={34} />
+              <Typography variant="h6" fontWeight={800}>{branding.appName}</Typography>
             </Box>
 
             <Typography variant="h4" fontWeight={800} sx={{ mb: 0.75, letterSpacing: '-0.04em' }}>
@@ -271,12 +256,13 @@ export default function AuthPage() {
               sx={{
                 py: 1.6,
                 borderRadius: 3,
-                borderColor: 'rgba(17,24,39,0.12)',
+                borderColor: 'divider',
                 fontWeight: 700,
                 textTransform: 'none',
                 '&:hover': {
-                  borderColor: 'rgba(17,24,39,0.3)',
-                  bgcolor: 'rgba(17,24,39,0.02)',
+                  borderColor: (theme) =>
+                    theme.palette.mode === 'dark' ? 'rgba(209,250,229,0.3)' : 'rgba(17,24,39,0.3)',
+                  bgcolor: 'action.hover',
                 },
               }}
             >
