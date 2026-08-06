@@ -5,8 +5,12 @@ import {
   Button,
   CircularProgress,
   Container,
+  IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import CodeIcon from '@mui/icons-material/Code';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import KeyboardCommandKeyIcon from '@mui/icons-material/KeyboardCommandKey';
@@ -72,7 +76,7 @@ const FEATURES = [
 
 export default function AuthPage() {
   const { signInWithGoogle } = useAuth();
-  const { mode } = useThemeMode();
+  const { mode, toggleMode } = useThemeMode();
   const { branding } = useAppSettings();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -98,10 +102,12 @@ export default function AuthPage() {
     <Box
       sx={{
         minHeight: '100vh',
+        '@supports (min-height: 100dvh)': {
+          minHeight: '100dvh',
+        },
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2,
         background: (theme) =>
           theme.palette.mode === 'dark' ? darkBackground : lightBackground,
         backgroundAttachment: 'fixed',
@@ -112,65 +118,241 @@ export default function AuthPage() {
       {mode === 'dark' && <MatrixRain />}
 
       <Box
-        sx={{
-          position: 'absolute',
-          width: 520,
-          height: 520,
-          borderRadius: '50%',
-          top: -160,
-          left: -120,
-          background: 'radial-gradient(circle, rgba(16,163,127,0.16), transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <Box
+        aria-hidden="true"
         sx={{
           position: 'absolute',
           width: 560,
           height: 560,
           borderRadius: '50%',
-          bottom: -200,
-          right: -140,
+          top: -180,
+          left: -140,
+          background: 'radial-gradient(circle, rgba(16,163,127,0.16), transparent 70%)',
+          pointerEvents: 'none',
+          animation: 'blobFloat 24s ease-in-out infinite',
+          '@keyframes blobFloat': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '33%': { transform: 'translate(50px, 30px) scale(1.1)' },
+            '66%': { transform: 'translate(-30px, -20px) scale(0.94)' },
+          },
+        }}
+      />
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          width: 620,
+          height: 620,
+          borderRadius: '50%',
+          bottom: -220,
+          right: -160,
           background: 'radial-gradient(circle, rgba(59,130,246,0.14), transparent 70%)',
           pointerEvents: 'none',
+          animation: 'blobFloat 28s ease-in-out infinite reverse',
+          '@keyframes blobFloat': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '33%': { transform: 'translate(50px, 30px) scale(1.1)' },
+            '66%': { transform: 'translate(-30px, -20px) scale(0.94)' },
+          },
+        }}
+      />
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          width: 480,
+          height: 480,
+          borderRadius: '50%',
+          top: '42%',
+          left: '8%',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.11), transparent 70%)',
+          pointerEvents: 'none',
+          animation: 'blobFloat 32s ease-in-out infinite',
+          '@keyframes blobFloat': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '33%': { transform: 'translate(50px, 30px) scale(1.1)' },
+            '66%': { transform: 'translate(-30px, -20px) scale(0.94)' },
+          },
         }}
       />
 
-      <Container maxWidth="lg">
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: { xs: 2, sm: 3.5 },
+          py: { xs: 2, sm: 2.5 },
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          <BrandLogo
+            size={40}
+            sx={{
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 8px 20px rgba(0,230,118,0.25)'
+                  : '0 8px 20px rgba(16,163,127,0.22)',
+            }}
+          />
+          <Box sx={{ display: { xs: 'none', sm: 'block' }, minWidth: 0 }}>
+            <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.15 }} noWrap>
+              {branding.appName}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ letterSpacing: 0.5, fontWeight: 600 }}
+              noWrap
+            >
+              {branding.tagline}
+            </Typography>
+          </Box>
+        </Box>
+        <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          <IconButton
+            onClick={toggleMode}
+            aria-label="Toggle theme"
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2.5,
+              border: 1,
+              borderColor: 'divider',
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark' ? 'rgba(17,24,20,0.6)' : 'rgba(255,255,255,0.8)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 6px 18px rgba(15,23,42,0.10)',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            {mode === 'dark' ? (
+              <LightModeIcon sx={{ color: 'primary.main' }} />
+            ) : (
+              <DarkModeIcon sx={{ color: '#f59e0b' }} />
+            )}
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      <Container
+        maxWidth="lg"
+        sx={{ position: 'relative', zIndex: 2, px: { xs: 2, sm: 4 } }}
+      >
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.15fr 1fr' },
-            gap: { xs: 3, md: 6 },
+            gridTemplateColumns: { xs: '1fr', md: '1.1fr 0.9fr' },
+            gap: { xs: 3, sm: 5, md: 7 },
             alignItems: 'center',
-            position: 'relative',
+            pt: { xs: 12, sm: 14, md: 0 },
+            pb: { xs: 10, md: 0 },
+            '@keyframes heroFadeUp': {
+              from: { opacity: 0, transform: 'translateY(18px)' },
+              to: { opacity: 1, transform: 'translateY(0)' },
+            },
+            animation: 'heroFadeUp 0.55s ease-out',
           }}
         >
-          <Box sx={{ display: { xs: 'none', md: 'block' }, pr: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-              <Box sx={{ boxShadow: '0 18px 38px rgba(16,163,127,0.25)' }}>
-                <BrandLogo size={52} />
-              </Box>
-              <Box>
-                <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.04em' }}>
-                  {branding.appName}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.5 }}>
-                  {branding.tagline.toUpperCase()}
-                </Typography>
-              </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 1.5,
+                py: 0.75,
+                mb: 2.5,
+                borderRadius: 999,
+                border: 1,
+                borderColor: 'divider',
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(17,24,20,0.6)'
+                    : 'rgba(255,255,255,0.7)',
+                backdropFilter: 'blur(6px)',
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: 'primary.main',
+                  flexShrink: 0,
+                  '@keyframes pulseDot': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(16,163,127,0.45)' },
+                    '70%': { boxShadow: '0 0 0 9px rgba(16,163,127,0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(16,163,127,0)' },
+                  },
+                  animation: 'pulseDot 2.2s ease-out infinite',
+                }}
+              />
+              Your AI developer workspace
             </Box>
 
-            <Typography variant="h2" fontWeight={800} sx={{ mb: 2, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
+            <Typography
+              variant="h2"
+              fontWeight={800}
+              sx={{
+                mb: 1.5,
+                letterSpacing: '-0.045em',
+                lineHeight: 1.12,
+                fontSize: 'clamp(2rem, 2.6vw + 1.3rem, 3.6rem)',
+              }}
+            >
               Code, debug and
-              <Box component="span" sx={{ color: 'primary.main' }}> ship faster.</Box>
+              <Box
+                component="span"
+                sx={{
+                  background: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'linear-gradient(90deg, #00e676, #22d3ee, #a78bfa, #00e676)'
+                      : 'linear-gradient(90deg, #10a37f, #3b82f6, #8b5cf6, #10a37f)',
+                  backgroundSize: '200% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  '@keyframes gradientShift': {
+                    '0%': { backgroundPosition: '0% center' },
+                    '100%': { backgroundPosition: '200% center' },
+                  },
+                  animation: 'gradientShift 6s linear infinite',
+                }}
+              >
+                {' '}ship faster.
+              </Box>
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 460, fontSize: '1.05rem' }}>
+
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{
+                mb: { xs: 3, md: 4 },
+                maxWidth: 460,
+                fontSize: { xs: '0.95rem', md: '1.05rem' },
+              }}
+            >
               The best AI models, a developer-first experience, and voice — all in one
               place. No setup, no cards. Just sign in and start building.
             </Typography>
 
-            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, maxWidth: 500 }}>
+            <Box
+              component="ul"
+              sx={{
+                listStyle: 'none',
+                p: 0,
+                m: 0,
+                maxWidth: 520,
+                display: { xs: 'none', md: 'block' },
+              }}
+            >
               {FEATURES.map((feature) => (
                 <Box
                   component="li"
@@ -184,8 +366,18 @@ export default function AuthPage() {
                     border: 1,
                     borderColor: 'divider',
                     bgcolor: (theme) =>
-                      theme.palette.mode === 'dark' ? 'rgba(17,24,20,0.6)' : 'rgba(255,255,255,0.7)',
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(17,24,20,0.6)'
+                        : 'rgba(255,255,255,0.7)',
                     backdropFilter: 'blur(6px)',
+                    transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                    '&:hover': {
+                      transform: 'translateY(-3px)',
+                      boxShadow: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? '0 14px 30px rgba(0,0,0,0.35)'
+                          : '0 14px 30px rgba(15,23,42,0.10)',
+                    },
                   }}
                 >
                   <Box
@@ -202,7 +394,7 @@ export default function AuthPage() {
                   >
                     {feature.icon}
                   </Box>
-                  <Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <Typography variant="subtitle2" fontWeight={700}>{feature.title}</Typography>
                     <Typography variant="body2" color="text.secondary">{feature.description}</Typography>
                   </Box>
@@ -213,13 +405,18 @@ export default function AuthPage() {
 
           <Box
             sx={{
-              p: { xs: 3, sm: 4.5 },
+              p: { xs: 2.5, sm: 4.5 },
               borderRadius: 5,
-              bgcolor: 'background.paper',
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(17,24,20,0.72)'
+                  : 'rgba(255,255,255,0.78)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
               boxShadow: (theme) =>
                 theme.palette.mode === 'dark'
                   ? '0 30px 70px rgba(0,0,0,0.5)'
-                  : '0 30px 70px rgba(15,23,42,0.10)',
+                  : '0 30px 70px rgba(15,23,42,0.12)',
               border: 1,
               borderColor: 'divider',
               maxWidth: 440,
@@ -227,12 +424,16 @@ export default function AuthPage() {
               width: '100%',
             }}
           >
-            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1, mb: 2 }}>
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1, mb: 2.5 }}>
               <BrandLogo size={34} />
-              <Typography variant="h6" fontWeight={800}>{branding.appName}</Typography>
+              <Typography variant="h6" fontWeight={800} noWrap>{branding.appName}</Typography>
             </Box>
 
-            <Typography variant="h4" fontWeight={800} sx={{ mb: 0.75, letterSpacing: '-0.04em' }}>
+            <Typography
+              variant="h4"
+              fontWeight={800}
+              sx={{ mb: 0.75, letterSpacing: '-0.04em', fontSize: { xs: '1.9rem', sm: '2.1rem' } }}
+            >
               Welcome
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -264,6 +465,10 @@ export default function AuthPage() {
                 borderColor: 'divider',
                 fontWeight: 700,
                 textTransform: 'none',
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(255,255,255,0.6)',
                 '&:hover': {
                   borderColor: (theme) =>
                     theme.palette.mode === 'dark' ? 'rgba(209,250,229,0.3)' : 'rgba(17,24,39,0.3)',
@@ -284,6 +489,24 @@ export default function AuthPage() {
           </Box>
         </Box>
       </Container>
+
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 5,
+          textAlign: 'center',
+          pb: 1.75,
+          pointerEvents: 'none',
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.75, fontWeight: 600 }}>
+          © {new Date().getFullYear()} {branding.appName} · Built for developers
+        </Typography>
+      </Box>
     </Box>
   );
 }
