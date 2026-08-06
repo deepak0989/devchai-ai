@@ -19,6 +19,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { Chat } from '../types';
 import { useThemeMode } from '../context/ThemeModeProvider';
 import { useAppSettings } from '../lib/settings';
+import { darkBackground, lightBackground } from '../theme';
 import BrandLogo from './BrandLogo';
 
 interface SidebarProps {
@@ -78,7 +79,9 @@ export default function Sidebar({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        bgcolor: 'background.default',
+        background: (theme) =>
+          theme.palette.mode === 'dark' ? darkBackground : lightBackground,
+        backgroundAttachment: 'fixed',
         borderRight: 1,
         borderColor: 'divider',
       }}
