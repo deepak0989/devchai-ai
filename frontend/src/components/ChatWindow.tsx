@@ -345,8 +345,9 @@ export default function ChatWindow({
         height: '100%',
         background: (theme) =>
           theme.palette.mode === 'dark'
-            ? 'linear-gradient(180deg, #0a0f0c 0%, #0d130f 100%)'
-            : 'linear-gradient(180deg, #f5f5f4 0%, #f8f8f7 100%)',
+            ? 'radial-gradient(900px 420px at 50% -80px, rgba(0,230,118,0.06) 0%, transparent 60%), linear-gradient(180deg, #0a0f0c 0%, #0d1410 100%)'
+            : 'linear-gradient(180deg, #f8faf9 0%, #eff5f2 100%)',
+        backgroundAttachment: 'fixed',
       }}
     >
       <Box
