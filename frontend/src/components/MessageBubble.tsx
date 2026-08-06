@@ -1,5 +1,19 @@
 import { ReactNode, useState } from 'react';
-import { Box, Chip, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -9,11 +23,16 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ShareIcon from '@mui/icons-material/Share';
+import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
+import TabletMacIcon from '@mui/icons-material/TabletMac';
+import SmartphoneIcon from '@mui/icons-material/Smartphone';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 import TypingLoader from './TypingLoader';
+import { api } from '../api/client';
 import { canPreviewLanguage, canRunLanguage, languageLabel, runCode, RunResult } from '../lib/runner';
 
 interface MessageBubbleProps {
@@ -41,6 +60,14 @@ function CodeBlock({
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [preview, setPreview] = useState(canPreviewLanguage(language));
   const [previewKey, setPreviewKey] = useState(0);
+  const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareName, setShareName] = useState('');
+  const [shareUrl, setShareUrl] = useState('');
+  const [shareAppId, setShareAppId] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const isApp = canPreviewLanguage(language);
 
@@ -49,6 +76,47 @@ function CodeBlock({
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  function handleOpenShare() {
+    const titleMatch = /<title[^>]*>([^<]*)<\/title>/i.exec(code);
+    setShareName((titleMatch?.[1] ?? 'Mini-app').trim() || 'Mini-app');
+    setShareUrl('');
+    setShareAppId(null);
+    setShareCopied(false);
+    setShareError(null);
+    setShareOpen(true);
+  }
+
+  async function handleCreateLink() {
+    setShareLoading(true);
+    setShareError(null);
+    try {
+      let appId = shareAppId;
+      if (appId) {
+        await api.updateMiniApp(appId, { name: shareName, html: code });
+      } else {
+        const { app } = await api.createMiniApp({ name: shareName, html: code, isPublic: true });
+        appId = app.id;
+        setShareAppId(appId);
+      }
+      setShareUrl(`${window.location.origin}/app/${appId}`);
+    } catch (err) {
+      setShareError(err instanceof Error ? err.message : 'Failed to create link');
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  async function handleCopyLink() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1500);
+    } catch {
+      // Clipboard unavailable - ignore
+    }
   }
 
   async function handleCopy() {
@@ -110,6 +178,13 @@ function CodeBlock({
           </IconButton>
         )}
         {isApp && (
+          <Tooltip title="Share with a link">
+            <IconButton size="small" onClick={handleOpenShare} aria-label="Share mini-app" sx={{ color: 'text.secondary' }}>
+              <ShareIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {isApp && (
           <Tooltip title="Open in new tab">
             <IconButton size="small" onClick={handleOpenInNewTab} aria-label="Open in new tab" sx={{ color: 'text.secondary' }}>
               <OpenInNewIcon fontSize="small" />
@@ -118,6 +193,53 @@ function CodeBlock({
         )}
         {canPreviewLanguage(language) && (
           <>
+            {isApp && preview && (
+              <Box
+                role="group"
+                aria-label="Preview size"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.25,
+                  ml: 0.25,
+                  px: 0.5,
+                  py: 0.25,
+                  borderRadius: 2,
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Tooltip title="Desktop">
+                  <IconButton
+                    size="small"
+                    onClick={() => setDevice('desktop')}
+                    aria-label="Desktop preview"
+                    sx={{ color: device === 'desktop' ? 'primary.main' : 'text.secondary' }}
+                  >
+                    <DesktopWindowsIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Tablet">
+                  <IconButton
+                    size="small"
+                    onClick={() => setDevice('tablet')}
+                    aria-label="Tablet preview"
+                    sx={{ color: device === 'tablet' ? 'primary.main' : 'text.secondary' }}
+                  >
+                    <TabletMacIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Mobile">
+                  <IconButton
+                    size="small"
+                    onClick={() => setDevice('mobile')}
+                    aria-label="Mobile preview"
+                    sx={{ color: device === 'mobile' ? 'primary.main' : 'text.secondary' }}
+                  >
+                    <SmartphoneIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
             {isApp && (
               <Tooltip title="Restart app">
                 <IconButton
@@ -144,20 +266,35 @@ function CodeBlock({
         </Tooltip>
       </Box>
       {preview ? (
-        <Box
-          component="iframe"
-          key={previewKey}
-          title={`${language} preview`}
-          srcDoc={code}
-          sandbox="allow-scripts"
-          sx={{
-            display: 'block',
-            width: '100%',
-            height: isApp ? 420 : 300,
-            border: 'none',
-            bgcolor: '#ffffff',
-          }}
-        />
+        <Box sx={{ bgcolor: '#ffffff', pt: 1.5, pb: 1.5, borderTop: 1, borderColor: 'divider' }}>
+          <Box
+            sx={{
+              width: device === 'mobile' ? 375 : device === 'tablet' ? 768 : '100%',
+              maxWidth: '100%',
+              mx: 'auto',
+              overflow: 'hidden',
+              borderRadius: device === 'desktop' ? 0 : 2.5,
+              boxShadow:
+                device === 'desktop' ? 'none' : '0 12px 32px rgba(15,23,42,0.18)',
+              border: device === 'desktop' ? 'none' : '1px solid rgba(17,24,39,0.12)',
+            }}
+          >
+            <Box
+              component="iframe"
+              key={previewKey}
+              title={`${language} preview`}
+              srcDoc={code}
+              sandbox="allow-scripts"
+              sx={{
+                display: 'block',
+                width: '100%',
+                height: isApp ? (device === 'mobile' ? 560 : 440) : 300,
+                border: 'none',
+                bgcolor: '#ffffff',
+              }}
+            />
+          </Box>
+        </Box>
       ) : (
         <Box
           component="pre"
@@ -202,6 +339,85 @@ function CodeBlock({
           </Box>
         </Box>
       )}
+
+      <Dialog open={shareOpen} onClose={() => setShareOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Share mini-app</DialogTitle>
+        <DialogContent>
+          <TextField
+            size="small"
+            fullWidth
+            label="App name"
+            value={shareName}
+            onChange={(event) => setShareName(event.target.value)}
+            inputProps={{ maxLength: 80 }}
+            disabled={shareLoading}
+            sx={{ mb: 2, mt: 0.5 }}
+          />
+          {shareUrl ? (
+            <>
+              <TextField
+                size="small"
+                fullWidth
+                label="Public link"
+                value={shareUrl}
+                InputProps={{ readOnly: true }}
+                sx={{ mb: 1.5 }}
+              />
+              <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={shareCopied ? <CheckIcon /> : <ContentCopyIcon />}
+                  onClick={handleCopyLink}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2.5 }}
+                >
+                  {shareCopied ? 'Copied!' : 'Copy link'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<OpenInNewIcon />}
+                  onClick={() => window.open(shareUrl, '_blank')}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2.5 }}
+                >
+                  Open
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleCreateLink}
+                  disabled={shareLoading}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2.5 }}
+                >
+                  Update link
+                </Button>
+              </Box>
+            </>
+          ) : (
+            <Button
+              variant="contained"
+              fullWidth
+              size="medium"
+              disabled={shareLoading || shareName.trim() === ''}
+              onClick={handleCreateLink}
+              startIcon={shareLoading ? <CircularProgress size={16} color="inherit" /> : <ShareIcon />}
+              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2.5 }}
+            >
+              {shareLoading ? 'Creating link...' : 'Create public link'}
+            </Button>
+          )}
+          {shareError && (
+            <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>
+              {shareError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setShareOpen(false)} color="inherit" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
