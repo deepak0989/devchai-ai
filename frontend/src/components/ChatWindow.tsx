@@ -48,6 +48,8 @@ interface LocalMessage {
 }
 
 const SUGGESTIONS = [
+  'Build me a mini pomodoro timer app',
+  'Make a landing page for my startup idea',
   'Explain how React reconciliation works',
   'Write a debounce hook in TypeScript',
   'Debug: why is my SQL query slow?',
