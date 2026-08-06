@@ -31,10 +31,24 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
     const name = cleanName(body.name);
     const isPublic = body.isPublic !== false;
 
+    let chatId: string | null = null;
+    if (typeof body.chatId === 'string' && body.chatId.trim().length > 0) {
+      const { data: chat, error: chatError } = await supabase
+        .from('chats')
+        .select('id, user_id')
+        .eq('id', body.chatId)
+        .maybeSingle();
+      if (chatError) throw chatError;
+      if (!chat || chat.user_id !== req.user!.id) {
+        return res.status(404).json({ error: 'Chat not found' });
+      }
+      chatId = chat.id;
+    }
+
     const { data, error } = await supabase
       .from('mini_apps')
-      .insert({ user_id: req.user!.id, name, html, is_public: isPublic })
-      .select('id, name, is_public, created_at')
+      .insert({ user_id: req.user!.id, chat_id: chatId, name, html, is_public: isPublic })
+      .select('id, name, chat_id, is_public, created_at')
       .single();
 
     if (error) throw error;
@@ -91,7 +105,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { data, error } = await supabase
       .from('mini_apps')
-      .select('id, name, is_public, created_at, updated_at')
+      .select('id, name, chat_id, is_public, created_at, updated_at')
       .eq('user_id', req.user!.id)
       .order('updated_at', { ascending: false })
       .limit(100);
