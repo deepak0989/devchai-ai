@@ -1,6 +1,7 @@
 import { Box, Button, Typography } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useAppSettings } from '../lib/settings';
+import { darkBackground, lightBackground } from '../theme';
 import BrandLogo from './BrandLogo';
 
 export default function MaintenanceScreen({ message }: { message: string }) {
@@ -15,9 +16,8 @@ export default function MaintenanceScreen({ message }: { message: string }) {
         alignItems: 'center',
         justifyContent: 'center',
         background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'linear-gradient(180deg, #0a0f0c 0%, #0d130f 100%)'
-            : 'linear-gradient(180deg, #f0fdfa 0%, #f5f5f4 100%)',
+          theme.palette.mode === 'dark' ? darkBackground : lightBackground,
+        backgroundAttachment: 'fixed',
         p: 3,
       }}
     >
