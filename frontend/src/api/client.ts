@@ -86,6 +86,7 @@ export interface AdminUserRow {
 export interface MiniAppRow {
   id: string;
   name: string;
+  chat_id: string | null;
   is_public: boolean;
   created_at: string;
   updated_at?: string;
@@ -93,6 +94,17 @@ export interface MiniAppRow {
 
 export interface MiniAppDetail extends MiniAppRow {
   html: string;
+}
+
+export interface AdminMiniAppRow {
+  id: string;
+  user_id: string;
+  chat_id: string | null;
+  name: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  owner: { name: string; email: string };
 }
 
 async function requestBlob(
@@ -232,7 +244,7 @@ export const api = {
     });
   },
 
-  createMiniApp(payload: { name: string; html: string; isPublic?: boolean }) {
+  createMiniApp(payload: { name: string; html: string; isPublic?: boolean; chatId?: string }) {
     return request<{ app: MiniAppRow }>('/mini-apps', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -248,6 +260,31 @@ export const api = {
 
   getPublicMiniApp(id: string) {
     return request<{ app: MiniAppDetail }>(`/public/mini-apps/${id}`);
+  },
+
+  adminGetMiniApps(params?: { search?: string; visibility?: 'all' | 'public' | 'private' }) {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.visibility && params.visibility !== 'all') query.set('visibility', params.visibility);
+    const suffix = query.toString();
+    return request<{
+      apps: AdminMiniAppRow[];
+      total: number;
+      counts: { total: number; public: number; private: number };
+    }>(`/admin/mini-apps${suffix ? `?${suffix}` : ''}`);
+  },
+
+  adminToggleMiniApp(id: string, isPublic: boolean) {
+    return request<{ app: MiniAppRow }>(`/admin/mini-apps/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isPublic }),
+    });
+  },
+
+  adminDeleteMiniApp(id: string) {
+    return request<{ ok: boolean }>(`/admin/mini-apps/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   getPublicSettings() {
