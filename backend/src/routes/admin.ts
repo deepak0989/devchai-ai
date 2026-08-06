@@ -733,6 +733,7 @@ router.put('/settings', requireAuth, requireAdmin, async (req: AuthRequest, res)
         appName: typeof body.branding?.appName === 'string' ? body.branding.appName : '',
         logo: typeof body.branding?.logo === 'string' ? body.branding.logo : '',
         tagline: typeof body.branding?.tagline === 'string' ? body.branding.tagline : '',
+        logoUrl: typeof body.branding?.logoUrl === 'string' ? body.branding.logoUrl : '',
       });
     }
 
