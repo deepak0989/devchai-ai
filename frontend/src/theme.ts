@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles';
+import { contrastTextFor, darkenHex, isValidHex } from './lib/color';
 
 export const lightBackground =
   'radial-gradient(1200px 600px at 85% -150px, rgba(139, 92, 246, 0.12) 0%, transparent 60%), radial-gradient(1000px 500px at 10% 110%, rgba(14, 165, 233, 0.10) 0%, transparent 60%), linear-gradient(160deg, #eef6ff 0%, #f0ebff 45%, #fdeef5 100%)';
@@ -180,5 +181,39 @@ export const darkTheme = createTheme({
     },
   },
 });
+
+export function createAppTheme(mode: 'light' | 'dark', accent?: string) {
+  const base = mode === 'dark' ? darkTheme : lightTheme;
+  if (!accent || !isValidHex(accent)) return base;
+
+  const main = accent.trim();
+  const dark = darkenHex(main);
+  const hover = darkenHex(main, 0.3);
+
+  return createTheme(base, {
+    palette: {
+      primary: {
+        main,
+        dark,
+        light: mode === 'dark' ? darkenHex(main, -0.55) : '#d7f5ec',
+        contrastText: contrastTextFor(main),
+      },
+    },
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            '&.MuiButton-contained': {
+              background: `linear-gradient(135deg, ${main} 0%, ${dark} 100%)`,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${dark} 0%, ${hover} 100%)`,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
 
 export default lightTheme;
